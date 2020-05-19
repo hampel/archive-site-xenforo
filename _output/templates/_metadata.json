@@ -1,0 +1,17 @@
+{
+    "admin/hampel_archivesite_active_users.html": {
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "01be761328c3765dd2c611ec8a8d6c5d"
+    },
+    "admin/hampel_archivesite_archived_users.html": {
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "923f3611d0c5074bf4746294afe9e79d"
+    },
+    "admin/hampel_archivesite_protected_users.html": {
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "6618048da82cb86a30f8d4050babccbf"
+    }
+}

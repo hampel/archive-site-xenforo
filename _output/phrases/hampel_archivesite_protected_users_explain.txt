@@ -1,0 +1,1 @@
+The following users retain the ability to log in, even once the site is archived. To add users to this list, either promote them to super-admin status or add them to the list of protected users in the config.php file.

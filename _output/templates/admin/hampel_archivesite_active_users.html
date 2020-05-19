@@ -1,0 +1,28 @@
+<xf:title>{{ phrase('hampel_archivesite_active_users') }}</xf:title>
+
+<div class="blockMessage">{{ phrase('hampel_archivesite_active_users_explain') }}</div>
+
+<xf:if is="$users is not empty">
+	<div class="block-container">
+		<h2 class="block-header">{{ phrase('hampel_archivesite_users_who_can_still_log_in') }}</h2>
+		<div class="block-body">
+			<xf:datalist>
+				<xf:foreach loop="$users" value="$user">
+					<xf:datarow>
+						<xf:cell class="dataList-cell--min dataList-cell--image dataList-cell--imageSmall"
+								 href="{{ link('users/edit', $user) }}">
+							<xf:avatar user="$user" size="s" href="" />
+						</xf:cell>
+						<xf:main href="{{ link('users/edit', $user) }}" label="{$user.username}"
+								 hint="{$user.email}" />
+					</xf:datarow>
+				</xf:foreach>
+			</xf:datalist>
+		</div>
+		<div class="block-footer block-footer--split">
+			<span class="block-footer-counter">{{ display_totals($users) }}</span>
+		</div>
+	</div>
+<xf:else />
+	<div class="blockMessage">{{ phrase('hampel_archivesite_no_users') }}</div>
+</xf:if>

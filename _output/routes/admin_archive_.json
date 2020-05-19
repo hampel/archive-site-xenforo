@@ -1,0 +1,11 @@
+{
+    "route_type": "admin",
+    "route_prefix": "archive",
+    "sub_name": "",
+    "format": "",
+    "build_class": "",
+    "build_method": "",
+    "controller": "Hampel\\ArchiveSite:Archive",
+    "context": "users",
+    "action_prefix": ""
+}
