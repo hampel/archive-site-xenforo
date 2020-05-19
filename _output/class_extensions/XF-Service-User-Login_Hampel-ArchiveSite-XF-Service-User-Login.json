@@ -1,0 +1,6 @@
+{
+    "from_class": "XF\\Service\\User\\Login",
+    "to_class": "Hampel\\ArchiveSite\\XF\\Service\\User\\Login",
+    "execute_order": 10,
+    "active": true
+}
