@@ -1,6 +1,7 @@
 <?php namespace Hampel\ArchiveSite\Repository;
 
 use Hampel\ArchiveSite\Config\ProtectedUsers;
+use XF\Entity\User;
 use XF\Mvc\Entity\Repository;
 
 class Archive extends Repository
@@ -36,5 +37,21 @@ class Archive extends Repository
 		return $this->finder('XF:User')
 		            ->where('user_id', '!=', ProtectedUsers::get())
 		            ->where('Auth.scheme_class', '!=', 'XF:NoPassword');
+	}
+
+	public function archiveUser(User $user)
+	{
+		// clear User Remember records so cookies no longer work
+		$this->repository('XF:UserRemember')->clearUserRememberRecords($user->user_id);
+
+		// delete all connected accounts to prevent login
+		$this->db()->query("
+			DELETE FROM xf_user_connected_account
+			WHERE user_id = ?
+		", $user->user_id);
+
+		// remove users password so they can no longer log in
+		$user->Auth->setNoPassword();
+		return $user->Auth->save();
 	}
 }
