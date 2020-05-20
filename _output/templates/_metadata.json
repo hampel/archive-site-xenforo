@@ -2,16 +2,16 @@
     "admin/hampel_archivesite_active_users.html": {
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
-        "hash": "01be761328c3765dd2c611ec8a8d6c5d"
+        "hash": "4738ff4bd4ca970aee7891502cd71c68"
     },
     "admin/hampel_archivesite_archived_users.html": {
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
-        "hash": "923f3611d0c5074bf4746294afe9e79d"
+        "hash": "7ce788ca772c1a0e4ef984415245ce48"
     },
     "admin/hampel_archivesite_protected_users.html": {
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
-        "hash": "6618048da82cb86a30f8d4050babccbf"
+        "hash": "941402ae237415fc0fae0e0dc8954daf"
     }
 }

@@ -1,12 +1,13 @@
 <?php namespace Hampel\ArchiveSite\Repository;
 
 use Hampel\ArchiveSite\Config\ProtectedUsers;
-use XF\Entity\User;
 use XF\Mvc\Entity\Repository;
 
 class Archive extends Repository
 {
-
+	/**
+	 * @return \XF\Mvc\Entity\Finder
+	 */
 	public function protectedUsers()
 	{
 		return $this->finder('XF:User')
@@ -14,26 +15,26 @@ class Archive extends Repository
                     ->whereOr([
                         ['Admin.is_super_admin', '=', '1'],
                         ['user_id', '=', ProtectedUsers::get()]
-                    ])
-                    ->fetch();
+                    ]);
 	}
 
-	public function archivedUsers($limit = null)
+	/**
+	 * @return \XF\Mvc\Entity\Finder
+	 */
+	public function archivedUsers()
 	{
 		return $this->finder('XF:User')
 		            ->with('Auth')
-                    ->where('Auth.scheme_class', '=', 'XF:NoPassword')
-                    ->fetch($limit);
+                    ->where('Auth.scheme_class', '=', 'XF:NoPassword');
 	}
 
-	public function activeUsers($limit = null)
+	/**
+	 * @return \XF\Mvc\Entity\Finder
+	 */
+	public function activeUsers()
 	{
 		return $this->finder('XF:User')
 		            ->where('user_id', '!=', ProtectedUsers::get())
-		            ->where('Auth.scheme_class', '!=', 'XF:NoPassword')
-                    ->fetch($limit)
-                    ->filter(function(User $user) {
-                        return !$user->is_super_admin;
-                    });
+		            ->where('Auth.scheme_class', '!=', 'XF:NoPassword');
 	}
 }

@@ -13,16 +13,24 @@
 								 href="{{ link('users/edit', $user) }}">
 							<xf:avatar user="$user" size="s" href="" />
 						</xf:cell>
-						<xf:main href="{{ link('users/edit', $user) }}" label="{$user.username}"
-								 hint="{$user.email}" />
+						<xf:main href="{{ link('users/edit', $user) }}">
+							<xf:label><xf:username user="$user" rich="true" notooltip="true" href="" /></xf:label>
+							<xf:hint>{$user.email}</xf:hint>
+						</xf:main>
+						<xf:delete href="{{ link('users/delete', $user) }}" />
+
 					</xf:datarow>
 				</xf:foreach>
 			</xf:datalist>
 		</div>
 		<div class="block-footer block-footer--split">
-			<span class="block-footer-counter">{{ display_totals($users) }}</span>
+			<span class="block-footer-counter">{{ display_totals($users, $total) }}</span>
 		</div>
 	</div>
+	
+	<xf:pagenav page="{$page}" perpage="{$perPage}" total="{$total}"
+				link="archive/active-users"
+				wrapperclass="block-outer block-outer--after" />	
 <xf:else />
 	<div class="blockMessage">{{ phrase('hampel_archivesite_no_users') }}</div>
 </xf:if>
