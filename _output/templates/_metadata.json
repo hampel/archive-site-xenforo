@@ -4,6 +4,16 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "4738ff4bd4ca970aee7891502cd71c68"
     },
+    "admin/hampel_archivesite_archive_users.html": {
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "05c8433425913329f02c83530e968258"
+    },
+    "admin/hampel_archivesite_archive_users.less": {
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "ebb1392584f80e8ac7e9811a0594b307"
+    },
     "admin/hampel_archivesite_archived_users.html": {
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",

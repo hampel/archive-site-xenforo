@@ -1,0 +1,58 @@
+<xf:css src="hampel_archivesite_archive_users.less" />
+
+<xf:title>{{ phrase('hampel_archivesite_archive_users') }}</xf:title>
+
+<xf:if is="$active == 0">
+	<div class="blockMessage blockMessage--success blockMessage--iconic">{{ phrase('hampel_archivesite_all_active_users_archived') }}</div>	
+	
+	<div class="block-container">
+		<h2 class="block-header">{{ phrase('hampel_archivesite_archive_users') }}</h2>	
+		<xf:formrow label="{{ phrase('hampel_archivesite_protected_users') }}">
+			{$protected|number}
+			<span role="presentation" aria-hidden="true">&middot;</span>
+			<a href="{{ link('archive/protected-users') }}">{{ phrase('hampel_archivesite_view_protected_users') }}</a>
+		</xf:formrow>
+		
+		<xf:formrow label="{{ phrase('hampel_archivesite_archived_users') }}">
+			{$archived|number}
+			<span role="presentation" aria-hidden="true">&middot;</span>
+			<a href="{{ link('archive/archived-users') }}">{{ phrase('hampel_archivesite_view_archived_users') }}</a>
+		</xf:formrow>		
+		
+	</div>
+<xf:else />
+	<xf:if is="$success">
+		<div class="blockMessage blockMessage--success blockMessage--iconic">{{ phrase('hampel_archivesite_archive_was_completed_successfully') }}</div>
+	<xf:else />
+		<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_archive_warning') }}</div>
+	</xf:if>	
+	
+	<xf:form action="{{ link('archive/archive-users/action') }}" class="block">
+	<div class="block-container">
+		<h2 class="block-header">{{ phrase('hampel_archivesite_archive_users') }}</h2>
+		
+		<xf:formrow label="{{ phrase('hampel_archivesite_protected_users') }}">
+			{$protected|number}
+			<span role="presentation" aria-hidden="true">&middot;</span>
+			<a href="{{ link('archive/protected-users') }}">{{ phrase('hampel_archivesite_view_protected_users') }}</a>
+		</xf:formrow>
+
+		<xf:formrow label="{{ phrase('hampel_archivesite_active_users') }}">
+			{$active|number}
+			<span role="presentation" aria-hidden="true">&middot;</span>
+			<a href="{{ link('archive/active-users') }}">{{ phrase('hampel_archivesite_view_active_users') }}</a>
+		</xf:formrow>
+
+		<hr class="formRowSep" />
+		
+		<div class="block-body">
+			<xf:checkboxrow
+				explain="{{ phrase('hampel_archivesite_protected_users_will_not_be_deleted') }}">
+
+				<xf:option name="actions[archive]">{{ phrase('hampel_archivesite_confirm_x_users_archived', {'total': $active|number}) }}</xf:option>
+			</xf:checkboxrow>
+		</div>
+		<xf:submitrow name="confirm_archive" icon="archive" submit="{{ phrase('hampel_archivesite_archive')}}" />
+	</div>
+	</xf:form>
+</xf:if>

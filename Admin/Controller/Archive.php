@@ -80,6 +80,41 @@ class Archive extends AbstractController
 		return $this->view('Hampel\ArchiveSite:Tools\ActiveUsers', 'hampel_archivesite_active_users', $viewParams);
 	}
 
+	public function actionArchiveUsers()
+	{
+		$this->setSectionContext('hampelArchiveSiteArchiveUsers');
+
+		$finder = $this->getArchiveRepo()->protectedUsers();
+		$protected = $finder->total();
+
+		$finder = $this->getArchiveRepo()->archivedUsers();
+		$archived = $finder->total();
+
+		$finder = $this->getArchiveRepo()->activeUsers();
+		$activeUsers = $finder->fetch()->filter(function(User $user) {
+			return !$user->is_super_admin;
+		});
+		$active = $activeUsers->count();
+
+		$viewParams = compact('protected', 'active', 'archived');
+		return $this->view('ampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
+	}
+
+	public function actionArchiveUsersAction()
+	{
+		$this->setSectionContext('hampelArchiveSiteArchiveUsers');
+
+		$this->assertPostOnly();
+
+		$actions = $this->filter('actions', 'array');
+
+		if ($this->request->exists('confirm_archive') && empty($actions['archive']))
+		{
+			return $this->error(\XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'));
+		}
+
+		// do something
+	}
 
 	/**
 	 * @return \Hampel\ArchiveSite\Repository\Archive
