@@ -113,14 +113,28 @@ class Archive extends AbstractController
 			return $this->error(\XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'));
 		}
 
-		// do something
+		$finder = $this->getArchiveRepo()->protectedUsers();
+		$protectedUsers = $finder->pluckFrom('user_id')->fetch();
+
+		$this->app->jobManager()->enqueueUnique('archiveUsers', 'Hampel\ArchiveSite:ArchiveUsers', [
+			'protectedUsers' => $protectedUsers->toArray()
+		]);
+
+		$reply = $this->redirect(
+			$this->buildLink('tools/run-job', null, [
+				'only' => 'archiveUsers',
+				'_xfRedirect' => $this->buildLink('archive/archive-users')
+			])
+		);
+		$reply->setPageParam('skipManualJobRun', true);
+		return $reply;
 	}
 
 	/**
-	 * @return \Hampel\ArchiveSite\Repository\Archive
+	 * @return \Hampel\ArchiveSite\Repository\ArchiveUsers
 	 */
 	protected function getArchiveRepo()
 	{
-		return $this->repository('Hampel\ArchiveSite:Archive');
+		return $this->repository('Hampel\ArchiveSite:ArchiveUsers');
 	}
 }
