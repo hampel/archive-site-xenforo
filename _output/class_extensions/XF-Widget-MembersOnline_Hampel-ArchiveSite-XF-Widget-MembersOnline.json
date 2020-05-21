@@ -1,0 +1,6 @@
+{
+    "from_class": "XF\\Widget\\MembersOnline",
+    "to_class": "Hampel\\ArchiveSite\\XF\\Widget\\MembersOnline",
+    "execute_order": 10,
+    "active": true
+}
