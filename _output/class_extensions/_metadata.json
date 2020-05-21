@@ -1,5 +1,8 @@
 {
     "XF-Service-User-Login_Hampel-ArchiveSite-XF-Service-User-Login.json": {
         "hash": "3add2bacb6d9ad9fd5cce77dfdd43e87"
+    },
+    "XF-Service-User-PasswordReset_Hampel-ArchiveSite-XF-Service-User-PasswordReset.json": {
+        "hash": "88c54a31a1e2755061a8abd83f80c01e"
     }
 }

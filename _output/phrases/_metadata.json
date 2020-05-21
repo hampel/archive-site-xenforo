@@ -185,6 +185,12 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "3bf7bde15a57d796a59b48c6c899ee16"
     },
+    "hampel_archivesite_password_reset_denied.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "94cd0dbdd5c47bb1ac99a32c0aec6014"
+    },
     "hampel_archivesite_protected_users.txt": {
         "global_cache": false,
         "version_id": 1000011,

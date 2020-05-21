@@ -6,4 +6,5 @@
 namespace Hampel\ArchiveSite\XF\Service\User
 {
 	class XFCP_Login extends \XF\Service\User\Login {}
+	class XFCP_PasswordReset extends \XF\Service\User\PasswordReset {}
 }
