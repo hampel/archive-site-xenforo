@@ -4,7 +4,7 @@ use Hampel\ArchiveSite\Config\ProtectedUsers;
 use XF\Entity\User;
 use XF\Mvc\Entity\Repository;
 
-class Archive extends Repository
+class ArchiveUsers extends Repository
 {
 	/**
 	 * @return \XF\Mvc\Entity\Finder
@@ -52,6 +52,13 @@ class Archive extends Repository
 
 		// remove users password so they can no longer log in
 		$user->Auth->setNoPassword();
+		return $user->Auth->save();
+	}
+
+	public function restoreUser(User $user)
+	{
+		// reset a users password so they can log in again (after they do a forgot password)
+		$user->Auth->resetPassword();
 		return $user->Auth->save();
 	}
 }
