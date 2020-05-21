@@ -1,0 +1,9 @@
+{
+    "template": "forum_overview_wrapper",
+    "description": "Remove new posts button for guests",
+    "execution_order": 10,
+    "enabled": true,
+    "action": "str_replace",
+    "find": "<xf:pageaction>",
+    "replace": "<xf:pageaction if=\"$xf.visitor.user_id\">"
+}
