@@ -1,0 +1,1 @@
+No protected users were found, which should not happen - all sites should have at least one super admin and all super admins should be protected.

@@ -1,6 +1,5 @@
 <?php namespace Hampel\ArchiveSite\Cli\Command;
 
-use Hampel\ArchiveSite\Config\ProtectedUsers;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputOption;
@@ -9,18 +8,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use XF\Entity\User;
 
-class ArchiveUsers extends Command
+class RestoreUsers extends Command
 {
 	protected function configure()
 	{
 		$this
-			->setName('xf:archive-users')
-			->setDescription('Archive users by removing their password')
+			->setName('xf:restore-users')
+			->setDescription('Restore archived users by resetting their password')
 			->addOption(
 				'user',
 				'u',
 				InputOption::VALUE_REQUIRED,
-				"Archive a single user by username or email address"
+				"Restore a single user by username or email address"
 			);
 	}
 
@@ -32,7 +31,6 @@ class ArchiveUsers extends Command
 		$usernameOrEmail = $input->getOption('user');
 		if ($usernameOrEmail)
 		{
-			/** @var User $user */
 			$user = \XF::repository("XF:User")->getUserByNameOrEmail($usernameOrEmail, ['Auth']);
 			if (!$user)
 			{
@@ -46,10 +44,10 @@ class ArchiveUsers extends Command
 				return 1;
 			}
 
-			$output->writeln("<info>" . \XF::phrase('hampel_archivesite_archiving_user_x', ['username' => $user->username, 'email' => $user->email]) . "</info>");
-			if (!$archiveRepo->archiveUser($user))
+			$output->writeln("<info>" . \XF::phrase('hampel_archivesite_restoring_user_x', ['username' => $user->username, 'email' => $user->email]) . "</info>");
+			if (!$archiveRepo->restoreUser($user))
 			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_archiving_user_x', ['user' => $usernameOrEmail]) . "</error>");
+				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_restoring_user_x', ['user' => $usernameOrEmail]) . "</error>");
 				return 1;
 			}
 
@@ -69,21 +67,12 @@ class ArchiveUsers extends Command
 		}
 
 		$output->writeln("");
-		$output->writeln("<comment>" . \XF::phrase('hampel_archivesite_archive_users') . "</comment>");
-		$output->writeln("");
-
-		$output->writeln("<info>" . \XF::phrase('hampel_archivesite_x_protected_users_found:', ['count' => number_format($protectedCount)]) . "</info>");
-		foreach ($protected as $user)
-		{
-			$output->writeln(" - {$user->username} ({$user->email})");
-		}
-		$output->writeln("");
-		$output->writeln("... " . \XF::phrase('hampel_archivesite_all_other_users_will_be_archived'));
+		$output->writeln("<comment>" . \XF::phrase('hampel_archivesite_restore_users') . "</comment>");
 		$output->writeln("");
 
 		/** @var QuestionHelper $helper */
 		$helper = $this->getHelper('question');
-		$output->writeln("<question>" . \XF::phrase('hampel_archivesite_are_you_sure_archiving') . "</question>");
+		$output->writeln("<question>" . \XF::phrase('hampel_archivesite_are_you_sure_restoring') . "</question>");
 		$question = new Question("<info>" . \XF::phrase('hampel_archivesite_type_yes_to_continue') . ": </info>");
 		$continue = $helper->ask($input, $output, $question);
 		$output->writeln("");
@@ -94,37 +83,34 @@ class ArchiveUsers extends Command
 			return 0;
 		}
 
-		$finder = $archiveRepo->activeUsers();
-		$active = $finder->fetch()->filter(function(User $user) {
-			return !$user->is_super_admin;
-		});
-
-		$total = $active->count();
+		$finder = $archiveRepo->archivedUsers();
+		$total = $finder->total();
+		$archived = $finder->fetch();
 
 		if ($total == 0)
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_no_active_users')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_no_archived_users')->render());
 			return 0;
 		}
 
 		$count = 0;
-		foreach ($active as $user)
+		foreach ($archived as $user)
 		{
 			$count++;
 
-			if (!$archiveRepo->archiveUser($user))
+			if (!$archiveRepo->restoreUser($user))
 			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_archiving_user_x', ['user' => $user->username]) . "</error>");
+				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_restoring_user_x', ['user' => $user->username]) . "</error>");
 				return 1;
 			}
 
 			if ($count % 100 == 0)
 			{
-				$output->writeln(\XF::phrase('hampel_archivesite_archived_x_users', ['count' => number_format($count)])->render());
+				$output->writeln(\XF::phrase('hampel_archivesite_restored_x_users', ['count' => number_format($count)])->render());
 			}
 		}
 
-		$output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_archived_x_users', ['count' => number_format($count)]) . "</info>");
+		$output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_restored_x_users', ['count' => number_format($count)]) . "</info>");
 
 		return 0;
 	}

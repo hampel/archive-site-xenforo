@@ -29,6 +29,12 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "200633dd2a6cf55f6daa34c32c803aab"
     },
+    "hampel_archivesite_aborting.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "10f3b203b67107d670a31d9b39cc1983"
+    },
     "hampel_archivesite_active_users.txt": {
         "global_cache": false,
         "version_id": 1000011,
@@ -46,6 +52,12 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "c6d2f363258020a0797542f72684e8c9"
+    },
+    "hampel_archivesite_all_other_users_will_be_archived.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "094717e4e15cb750eaf34f9631602ed6"
     },
     "hampel_archivesite_archive.txt": {
         "global_cache": false,
@@ -83,17 +95,89 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "43e1513104ba771b87b9ce0f1f564088"
     },
+    "hampel_archivesite_archived_x_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "880b1a94afd0add86ae3d739bdd33607"
+    },
+    "hampel_archivesite_archiving.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "2fc383c67ed70aa7f93a5ece39b4abf0"
+    },
+    "hampel_archivesite_archiving_user_x.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "cf63ceb744fe861c9f0892f9a2bfc03c"
+    },
+    "hampel_archivesite_are_you_sure_archiving.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "0571a6ec64d056f7e748b3043074e6ad"
+    },
+    "hampel_archivesite_are_you_sure_restoring.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "a9b2f32700a837b35fec28c20a2a41c1"
+    },
     "hampel_archivesite_confirm_x_users_archived.txt": {
         "global_cache": false,
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "cd1b1fbbc6b5255a615c162b06eeb93a"
     },
+    "hampel_archivesite_done.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "f92965e2c8a7afb3c1b9a5c09a263636"
+    },
+    "hampel_archivesite_error_archiving_user_x.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "bc3c3727a5d5821de8c3f04a5cb49ec0"
+    },
+    "hampel_archivesite_error_restoring_user_x.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "40fee458b22fc6789d7facdd785f9547"
+    },
     "hampel_archivesite_login_denied.txt": {
         "global_cache": false,
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "70a8c3b83841da3dd724dd15332fbdd7"
+    },
+    "hampel_archivesite_no_active_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "0261b057cac8e0c8f4ce804b1594cbd1"
+    },
+    "hampel_archivesite_no_archived_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "01ae7ac34b22615908851bdd1d608c2a"
+    },
+    "hampel_archivesite_no_protected_users_found.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "9e86830f0473ba1b47d60545d88916fa"
+    },
+    "hampel_archivesite_no_protected_users_found_error.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "7a3927270a520c86b9a397dbf8b9499c"
     },
     "hampel_archivesite_no_users.txt": {
         "global_cache": false,
@@ -118,6 +202,60 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "fefe563074d18636b0f1d49803221fa6"
+    },
+    "hampel_archivesite_restore_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "31e7f6604251dc7ae5abf7e72333f166"
+    },
+    "hampel_archivesite_restored_x_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "77df5cb46f3fe0d787fcdee8c59e5b05"
+    },
+    "hampel_archivesite_restoring_user_x.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "fd4271ceb952bbee4d52a6cbb0da916c"
+    },
+    "hampel_archivesite_successfully_archived_x_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "60f41310feb6e3615b84975dc37746b7"
+    },
+    "hampel_archivesite_successfully_restored_x_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "ac393f4d5adad0abf4197c6da82b2a0c"
+    },
+    "hampel_archivesite_type_yes_to_continue.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "4954282c6947d89e1a7c1d31467e18ff"
+    },
+    "hampel_archivesite_user_x_is_protected.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "672c9fe006caf9c8f37bda8797177b14"
+    },
+    "hampel_archivesite_user_x_not_found.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "6304844dc3e5077662b765cb091a2a89"
+    },
+    "hampel_archivesite_users.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "f9aae5fda8d810a29f12d1e61b4ab25f"
     },
     "hampel_archivesite_users_who_can_still_log_in.txt": {
         "global_cache": false,

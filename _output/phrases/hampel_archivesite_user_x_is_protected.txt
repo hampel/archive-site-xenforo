@@ -1,0 +1,1 @@
+User [{user}] is protected.
