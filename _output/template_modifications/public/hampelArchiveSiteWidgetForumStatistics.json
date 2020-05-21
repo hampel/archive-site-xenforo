@@ -1,0 +1,9 @@
+{
+    "template": "widget_forum_statistics",
+    "description": "Remove latest member from forum statistics widget",
+    "execution_order": 10,
+    "enabled": true,
+    "action": "str_replace",
+    "find": "\t\t\t<dl class=\"pairs pairs--justified\">\n\t\t\t\t<dt>{{ phrase('latest_member') }}</dt>\n\t\t\t\t<dd><xf:username user=\"{$forumStatistics.latestUser}\" /></dd>\n\t\t\t</dl>",
+    "replace": ""
+}
