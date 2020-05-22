@@ -1,0 +1,9 @@
+{
+    "template": "thread_view",
+    "description": "Remove not open for further replies from thread view pages",
+    "execution_order": 10,
+    "enabled": true,
+    "action": "str_replace",
+    "find": "\t\t\t\t\t\t<dd class=\"blockStatus-message blockStatus-message--locked\">\n\t\t\t\t\t\t\t{{ phrase('not_open_for_further_replies') }}\n\t\t\t\t\t\t</dd>",
+    "replace": ""
+}
