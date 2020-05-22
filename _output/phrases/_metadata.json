@@ -316,5 +316,41 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "b266583794101b052c8821febec7dee2"
+    },
+    "option.hampelArchiveSiteEndMessageHtml.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "53fc1736ac068434396e02fd9cee4eab"
+    },
+    "option.hampelArchiveSiteEndMessageUrl.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "ea3bce58104a054a2cf4a6c278dba1f0"
+    },
+    "option_explain.hampelArchiveSiteEndMessageHtml.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "103c845932953c7a35cc3aea2ed481ae"
+    },
+    "option_explain.hampelArchiveSiteEndMessageUrl.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "f52b1dc42ca235d08519ea88ea200fcd"
+    },
+    "option_group.hampelArchiveSite.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "80c23ebd4232df93146a5d0874333a1f"
+    },
+    "option_group_description.hampelArchiveSite.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "d41d8cd98f00b204e9800998ecf8427e"
     }
 }

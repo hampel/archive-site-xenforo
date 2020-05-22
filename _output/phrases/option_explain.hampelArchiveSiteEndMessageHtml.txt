@@ -1,0 +1,1 @@
+Brief message to display at the bottom of content pages. You may use HTML.

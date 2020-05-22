@@ -1,9 +1,15 @@
 {
+    "public/hampelArchiveSiteForumView.json": {
+        "hash": "2d313ca370e5e90220db6d99af3e24de"
+    },
     "public/hampelArchiveSitePageContainerWhatsNew.json": {
         "hash": "e8b6db14a7f77bf65127ca0778382035"
     },
     "public/hampelArchiveSitePageForumOverviewWrapper.json": {
         "hash": "6f6194f0781a43a2344a9525f2c49c79"
+    },
+    "public/hampelArchiveSiteThreadView.json": {
+        "hash": "680dd93adccf8ffbf1a75c62531904dc"
     },
     "public/hampelArchiveSiteWidgetForumStatistics.json": {
         "hash": "83e1b24f4ca428371ccfd0d9187fa688"
