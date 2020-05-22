@@ -45,7 +45,13 @@
         "global_cache": false,
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
-        "hash": "880e5482ac7977699fb1d66b869aa06d"
+        "hash": "7461340ec1ebf4dcfdf0b97b201152fa"
+    },
+    "hampel_archivesite_active_users_found.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "412bd9ee65370a89678f3199f7cc9080"
     },
     "hampel_archivesite_all_active_users_archived.txt": {
         "global_cache": false,
@@ -160,6 +166,12 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "0261b057cac8e0c8f4ce804b1594cbd1"
+    },
+    "hampel_archivesite_no_active_users_found.txt": {
+        "global_cache": false,
+        "version_id": 1000011,
+        "version_string": "1.0.0 Alpha 1",
+        "hash": "b46eb4b74e2730747ed23057f79b5cad"
     },
     "hampel_archivesite_no_archived_users.txt": {
         "global_cache": false,

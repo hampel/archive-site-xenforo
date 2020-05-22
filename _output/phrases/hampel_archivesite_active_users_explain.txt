@@ -1,1 +1,1 @@
-Active users can still log in and interact with the site. Once the site is archived, there should be no users listed here. To archive users, run the Archive Users process. Protected users are not shown here and will retain the ability to log in.
+Active users can still log in and interact with the site. Once the site is archived, there should be no users listed here. To archive users, run the <a href="{link}">Archive Users</a> process. Protected users are not shown here and will retain the ability to log in.
