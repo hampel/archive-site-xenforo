@@ -1,0 +1,9 @@
+{
+    "template": "member_about",
+    "description": "Hide following from member about",
+    "execution_order": 10,
+    "enabled": true,
+    "action": "str_replace",
+    "find": "<xf:if is=\"$followingCount\">",
+    "replace": "<xf:if is=\"$followingCount && $xf.visitor.user_id\">"
+}

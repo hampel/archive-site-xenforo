@@ -5,6 +5,12 @@
     "public/hampelArchiveSiteForumView.json": {
         "hash": "2d313ca370e5e90220db6d99af3e24de"
     },
+    "public/hampelArchiveSiteMemberAboutHideFollowers.json": {
+        "hash": "11d01a66e75009b836e864c786274117"
+    },
+    "public/hampelArchiveSiteMemberAboutHideFollowing.json": {
+        "hash": "f07232c6d5a570380ddca4401cccff22"
+    },
     "public/hampelArchiveSitePageContainerWhatsNew.json": {
         "hash": "e8b6db14a7f77bf65127ca0778382035"
     },
