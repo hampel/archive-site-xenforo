@@ -22,5 +22,8 @@
     },
     "public/hampelArchiveSiteWidgetForumStatistics.json": {
         "hash": "83e1b24f4ca428371ccfd0d9187fa688"
+    },
+    "public/hampelArchiveSiteXFMGMediaViewMacros.json": {
+        "hash": "329dc1bffd85852a3c2a58ab28502f40"
     }
 }
