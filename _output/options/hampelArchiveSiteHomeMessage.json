@@ -7,6 +7,6 @@
     "validation_method": "",
     "default_value": "This site has been archived and is no longer accepting new content.",
     "relations": {
-        "hampelArchiveSite": 10
+        "hampelArchiveSite": 1
     }
 }

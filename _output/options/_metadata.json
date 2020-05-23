@@ -1,8 +1,11 @@
 {
     "hampelArchiveSiteEndMessageHtml.json": {
-        "hash": "e936972748f47db518392f6a07caca89"
+        "hash": "672f8b182d3eee48085cc5d6302f7ff7"
     },
     "hampelArchiveSiteEndMessageUrl.json": {
-        "hash": "efadd332bc273e7ef3a06b5ee3895985"
+        "hash": "cd779d679bf05adfe9283cb5f9b806e9"
+    },
+    "hampelArchiveSiteHomeMessage.json": {
+        "hash": "e936972748f47db518392f6a07caca89"
     }
 }
