@@ -4,6 +4,6 @@
     "execution_order": 10,
     "enabled": true,
     "action": "str_replace",
-    "find": "{$innerContent|raw}",
-    "replace": "<xf:if contentcheck=\"true\">\n\t<div class=\"block\">\n\t\t<div class=\"block-container\">\n\t\t\t<div class=\"block-body\">\n\t\t\t\t<div class=\"block-row\">\n\t\t\t\t\t<xf:contentcheck>\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteHomeMessage|raw}\n\t\t\t\t\t</xf:contentcheck>\t\t\t\t\t\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\t\t\n\t</div>\n</xf:if>\n\n{$innerContent|raw}"
+    "find": "<xf:ad position=\"forum_overview_top\" />",
+    "replace": "<xf:if contentcheck=\"true\">\n\t<div class=\"block\">\n\t\t<div class=\"block-container\">\n\t\t\t<div class=\"block-body\">\n\t\t\t\t<div class=\"block-row\">\n\t\t\t\t\t<xf:contentcheck>\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteHomeMessage|raw}\n\t\t\t\t\t</xf:contentcheck>\t\t\t\t\t\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\t\t\n\t</div>\n</xf:if>\n\n$0"
 }

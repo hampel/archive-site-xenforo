@@ -5,5 +5,5 @@
     "enabled": true,
     "action": "str_replace",
     "find": "\t\t\t\t\t<xf:if is=\"!$thread.discussion_open\">\n\t\t\t\t\t\t<li>\n\t\t\t\t\t\t\t<i class=\"structItem-status structItem-status--locked\" aria-hidden=\"true\" title=\"{{ phrase('locked')|for_attr }}\"></i>\n\t\t\t\t\t\t\t<span class=\"u-srOnly\">{{ phrase('locked') }}</span>\n\t\t\t\t\t\t</li>\n\t\t\t\t\t</xf:if>",
-    "replace": ""
+    "replace": "\t\t\t\t\t<xf:if is=\"$xf.visitor.user_id\">\n$0\n\t\t\t\t\t</xf:if>"
 }
