@@ -3,6 +3,11 @@
 // ################## THIS IS A GENERATED FILE ##################
 // DO NOT EDIT DIRECTLY. EDIT THE CLASS EXTENSIONS IN THE CONTROL PANEL.
 
+namespace Hampel\ArchiveSite\XF\Mail
+{
+	class XFCP_Mail extends \XF\Mail\Mail {}
+}
+
 namespace Hampel\ArchiveSite\XF\Service\User
 {
 	class XFCP_Login extends \XF\Service\User\Login {}

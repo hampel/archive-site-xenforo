@@ -1,0 +1,6 @@
+{
+    "from_class": "XF\\Mail\\Mail",
+    "to_class": "Hampel\\ArchiveSite\\XF\\Mail\\Mail",
+    "execute_order": 10,
+    "active": true
+}
