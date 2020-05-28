@@ -5,5 +5,5 @@
     "enabled": true,
     "action": "str_replace",
     "find": "\t\t\t\t\t<xf:if contentcheck=\"true\">\n\t\t\t\t\t\t<dl class=\"pairs pairs--columns pairs--fixedSmall\">\n\t\t\t\t\t\t\t<dt>{{ phrase('birthday') }}</dt>\n\t\t\t\t\t\t\t<dd>\n\t\t\t\t\t\t\t\t<xf:contentcheck>\n\t\t\t\t\t\t\t\t\t<xf:if is=\"$user.Profile.birthday.timeStamp\">\n\t\t\t\t\t\t\t\t\t\t{{ date($user.Profile.birthday.timeStamp, $user.Profile.birthday.format) }}\n\t\t\t\t\t\t\t\t\t\t<xf:if is=\"$user.Profile.birthday.age\">\n\t\t\t\t\t\t\t\t\t\t\t{{ parens(phrase('age:') . ' ' . {$user.Profile.birthday.age}) }}\n\t\t\t\t\t\t\t\t\t\t</xf:if>\n\t\t\t\t\t\t\t\t\t</xf:if>\n\t\t\t\t\t\t\t\t</xf:contentcheck>\n\t\t\t\t\t\t\t</dd>\n\t\t\t\t\t\t</dl>\n\t\t\t\t\t</xf:if>",
-    "replace": ""
+    "replace": "\t\t\t\t\t<xf:if is=\"$xf.visitor.user_id\">\n$0\n\t\t\t\t\t</xf:if>"
 }
