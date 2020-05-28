@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.1.1 (2020-05-28)
+------------------
+
+* bugfix: hide birthday and thread not open message only for guests
+
 1.1.0 (2020-05-28)
 ------------------
 
