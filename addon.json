@@ -5,12 +5,12 @@
     "version_id": 1010170,
     "version_string": "1.1.1",
     "dev": "Simon Hampel",
-    "dev_url": "https://bitbucket.org/hampel/",
+    "dev_url": "https://xenforo.com/community/members/sim.4264/",
     "faq_url": "",
-    "support_url": "https://bitbucket.org/hampel/archive-site-xenforo/issues",
+    "support_url": "https://xenforo.com/community/threads/archive-site.180884/",
     "extra_urls": {
-        "Git Repository": "https://bitbucket.org/hampel/archive-site-xenforo",
-        "Twitter": "https://twitter.com/SimonHampel"
+        "Addon": "https://xenforo.com/community/resources/archive-site.7824/",
+        "Git Repository": "https://github.com/hampel/archive-site-xenforo"
     },
     "require": {
         "XF": [
