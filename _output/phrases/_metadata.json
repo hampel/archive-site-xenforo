@@ -329,6 +329,12 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "ea3bce58104a054a2cf4a6c278dba1f0"
     },
+    "option.hampelArchiveSiteEndMessageUrlTarget.txt": {
+        "global_cache": false,
+        "version_id": 1010170,
+        "version_string": "1.1.1",
+        "hash": "8ec0511dd0d0fb520f5a0529717bae4e"
+    },
     "option.hampelArchiveSiteHomeMessage.txt": {
         "global_cache": false,
         "version_id": 1000011,
@@ -346,6 +352,12 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "f52b1dc42ca235d08519ea88ea200fcd"
+    },
+    "option_explain.hampelArchiveSiteEndMessageUrlTarget.txt": {
+        "global_cache": false,
+        "version_id": 1010170,
+        "version_string": "1.1.1",
+        "hash": "f0a2196fa1319b361de1f6ce40b0ed97"
     },
     "option_explain.hampelArchiveSiteHomeMessage.txt": {
         "global_cache": false,

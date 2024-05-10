@@ -6,7 +6,10 @@
         "hash": "bf64a97c4dacbc86a17f7a5eb74c7d81"
     },
     "public/hampelArchiveSiteForumView.json": {
-        "hash": "2d313ca370e5e90220db6d99af3e24de"
+        "hash": "592430e3bbdaff6683b15d4b27c3b9a8"
+    },
+    "public/hampelArchiveSiteForumViewArchived.json": {
+        "hash": "1947420bc9d261aada3723c865c0c64b"
     },
     "public/hampelArchiveSiteMemberAboutHideFollowers.json": {
         "hash": "11d01a66e75009b836e864c786274117"
@@ -24,10 +27,13 @@
         "hash": "cf55a18e9c9c613cf8aa8f13ddc67760"
     },
     "public/hampelArchiveSiteThreadView.json": {
-        "hash": "8c6969c37cf31dcf926796745b7c1b34"
+        "hash": "be90b86891c581ce23145a80cda38b2a"
     },
     "public/hampelArchiveSiteThreadViewNotOpen.json": {
         "hash": "7bb93baa5293e48361a2872cf8808c01"
+    },
+    "public/hampelArchiveSiteThreadViewSiteArchived.json": {
+        "hash": "c86a2f88f8e67d3f5722f3aa6d0e1eb5"
     },
     "public/hampelArchiveSiteWidgetForumStatistics.json": {
         "hash": "f9131d44f4c1e33cff41743003780f68"

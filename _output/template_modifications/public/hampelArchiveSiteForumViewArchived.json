@@ -1,0 +1,9 @@
+{
+    "template": "forum_view",
+    "description": "Add site archived button below thread list",
+    "execution_order": 9,
+    "enabled": true,
+    "action": "str_replace",
+    "find": "\t\t<xf:if is=\"!$forum.canCreateThread() AND !$forum.canCreateThreadPreReg()\">",
+    "replace": "\t\t<div class=\"block-outer-opposite\">\n\t\t\t<xf:if is=\"$xf.options.hampelArchiveSiteEndMessageUrl\">\n\t\t\t\t<xf:if is=\"$xf.options.hampelArchiveSiteEndMessageUrlTarget\">\n\t\t\t\t\t<xf:button href=\"{{ $xf.options.hampelArchiveSiteEndMessageUrl }}\" class=\"button--link button--wrap\" target=\"_blank\">\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t\t</xf:button>\n\t\t\t\t\t<xf:else />\n\t\t\t\t\t<xf:button href=\"{{ $xf.options.hampelArchiveSiteEndMessageUrl }}\" class=\"button--link button--wrap\">\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t\t</xf:button>\n\t\t\t\t</xf:if>\t\t\t\n\t\t\t<xf:else />\n\t\t\t\t<span class=\"button button--link button--wrap\" style=\"cursor: default;\">\n\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t</span>\n\t\t\t</xf:if>\n\t\t</div>\n\n$0"
+}
