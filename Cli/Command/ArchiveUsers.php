@@ -14,7 +14,7 @@ class ArchiveUsers extends Command
 	protected function configure()
 	{
 		$this
-			->setName('xf:archive-users')
+			->setName('hg:archive-users')
 			->setDescription('Archive users by removing their password')
 			->addOption(
 				'user',

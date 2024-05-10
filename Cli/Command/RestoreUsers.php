@@ -13,7 +13,7 @@ class RestoreUsers extends Command
 	protected function configure()
 	{
 		$this
-			->setName('xf:restore-users')
+			->setName('hg:restore-users')
 			->setDescription('Restore archived users by resetting their password')
 			->addOption(
 				'user',
