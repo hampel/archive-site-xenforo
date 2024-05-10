@@ -23,7 +23,7 @@ class Archive extends AbstractController
 
 	public function actionIndex()
 	{
-		return $this->view('Hampel\ArchiveSite:Users', 'hampel_archivesite_users');
+        return $this->redirect($this->buildLink('archive/protected-users'));
 	}
 
 	public function actionProtectedUsers()
