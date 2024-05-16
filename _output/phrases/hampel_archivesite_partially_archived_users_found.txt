@@ -1,0 +1,1 @@
+Warning: users partially archived with v1.x of the addon still have valid user accounts, but have had their passwords removed and are blocked from logging on. Consider running the Archive users process again to completely disable these accounts

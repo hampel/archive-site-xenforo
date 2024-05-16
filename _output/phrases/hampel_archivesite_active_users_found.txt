@@ -1,1 +1,1 @@
-There are active users who can still log in to your site. You should either archive them, promote them to super admin, or add them to the protected users list.
+Warning: there are active users who can still log in to your site. You should either <a href="{link}">archive</a> them, promote them to super admin, or add them to the protected users list.

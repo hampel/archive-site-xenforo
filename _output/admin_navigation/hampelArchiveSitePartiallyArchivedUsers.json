@@ -1,7 +1,7 @@
 {
     "parent_navigation_id": "hampelArchiveSite",
-    "display_order": 4,
-    "link": "archive/active-users",
+    "display_order": 3,
+    "link": "archive/partially-archived-users",
     "icon": "",
     "admin_permission_id": "user",
     "debug_only": false,

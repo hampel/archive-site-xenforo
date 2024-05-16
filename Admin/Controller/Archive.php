@@ -60,6 +60,23 @@ class Archive extends AbstractController
 
 	}
 
+    public function actionPartiallyArchivedUsers()
+    {
+        $this->setSectionContext('hampelArchiveSitePartiallyArchivedUsers');
+
+        $page = $this->filterPage();
+        $perPage = 20;
+
+        $finder = $this->getArchiveRepo()->partiallyArchivedUsers();
+        $finder->limitByPage($page, $perPage);
+        $total = $finder->total();
+        $users = $finder->fetch();
+
+        $viewParams = compact('users', 'total', 'page', 'perPage');
+        return $this->view('Hampel\ArchiveSite:Tools\PartiallyArchivedUsers', 'hampel_archivesite_partially_archived_users', $viewParams);
+
+    }
+
 	public function actionActiveUsers()
 	{
 		$this->setSectionContext('hampelArchiveSiteActiveUsers');
@@ -90,13 +107,16 @@ class Archive extends AbstractController
 		$finder = $this->getArchiveRepo()->archivedUsers();
 		$archived = $finder->total();
 
+        $finder = $this->getArchiveRepo()->partiallyArchivedUsers();
+        $partiallyArchived = $finder->total();
+
 		$finder = $this->getArchiveRepo()->activeUsers();
 		$activeUsers = $finder->fetch()->filter(function(User $user) {
 			return !$user->is_super_admin;
 		});
 		$active = $activeUsers->count();
 
-		$viewParams = compact('protected', 'active', 'archived');
+		$viewParams = compact('protected', 'active', 'archived', 'partiallyArchived');
 		return $this->view('ampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
 	}
 

@@ -1,0 +1,1 @@
+Confirm {active} active and {partial} partially archived users will be fully archived with their accounts disabled

@@ -14,7 +14,7 @@ class ArchiveUsers extends Command
 	protected function configure()
 	{
 		$this
-			->setName('hg:archive-users')
+			->setName('archive:archive-users')
 			->setDescription('Archive users by removing their password')
 			->addOption(
 				'user',
@@ -53,7 +53,7 @@ class ArchiveUsers extends Command
 				return 1;
 			}
 
-			$output->writeln(\XF::phrase('hampel_archivesite_done')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_done'));
 			return 0;
 		}
 
@@ -90,41 +90,63 @@ class ArchiveUsers extends Command
 
 		if (!in_array($continue, ['yes', 'Yes', 'YES']))
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_aborting')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_aborting'));
 			return 0;
 		}
 
-		$finder = $archiveRepo->activeUsers();
-		$active = $finder->fetch()->filter(function(User $user) {
-			return !$user->is_super_admin;
-		});
-
+        $active = $archiveRepo->activeUsers()->fetch();
 		$total = $active->count();
 
 		if ($total == 0)
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_no_active_users')->render());
-			return 0;
+			$output->writeln(\XF::phrase('hampel_archivesite_no_active_users'));
 		}
+        else
+        {
+            $count = 0;
+            foreach ($active as $user)
+            {
+                $count++;
 
-		$count = 0;
-		foreach ($active as $user)
-		{
-			$count++;
+                if (!$archiveRepo->archiveUser($user))
+                {
+                    $output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_archiving_user_x', ['user' => $user->username]) . "</error>");
+                    return 1;
+                }
 
-			if (!$archiveRepo->archiveUser($user))
-			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_archiving_user_x', ['user' => $user->username]) . "</error>");
-				return 1;
-			}
+                if ($count % 100 == 0)
+                {
+                    $output->writeln(\XF::phrase('hampel_archivesite_archived_x_users', ['count' => number_format($count)]));
+                }
+            }
 
-			if ($count % 100 == 0)
-			{
-				$output->writeln(\XF::phrase('hampel_archivesite_archived_x_users', ['count' => number_format($count)])->render());
-			}
-		}
+            $output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_archived_x_users', ['count' => number_format($count)]) . "</info>");
+        }
 
-		$output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_archived_x_users', ['count' => number_format($count)]) . "</info>");
+        $partiallyArchived = $archiveRepo->partiallyArchivedUsers()->fetch();
+        $total = $partiallyArchived->count();
+
+        if ($total > 0)
+        {
+            $count = 0;
+            foreach ($partiallyArchived as $user)
+            {
+                $count++;
+
+                if (!$archiveRepo->archiveUser($user))
+                {
+                    $output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_archiving_user_x', ['user' => $user->username]) . "</error>");
+                    return 1;
+                }
+
+                if ($count % 100 == 0)
+                {
+                    $output->writeln(\XF::phrase('hampel_archivesite_archived_x_users', ['count' => number_format($count)]));
+                }
+            }
+
+            $output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_archived_x_users', ['count' => number_format($count)]) . "</info>");
+        }
 
 		return 0;
 	}

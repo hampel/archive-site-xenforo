@@ -1,5 +1,6 @@
 <?php namespace Hampel\ArchiveSite\Cli\Command;
 
+use Hampel\ArchiveSite\Config\ProtectedUsers;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,7 +14,7 @@ class RestoreUsers extends Command
 	protected function configure()
 	{
 		$this
-			->setName('hg:restore-users')
+			->setName('archive:restore-users')
 			->setDescription('Restore archived users by resetting their password')
 			->addOption(
 				'user',
@@ -51,7 +52,7 @@ class RestoreUsers extends Command
 				return 1;
 			}
 
-			$output->writeln(\XF::phrase('hampel_archivesite_done')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_done'));
 			return 0;
 		}
 
@@ -79,7 +80,7 @@ class RestoreUsers extends Command
 
 		if (!in_array($continue, ['yes', 'Yes', 'YES']))
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_aborting')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_aborting'));
 			return 0;
 		}
 
@@ -89,7 +90,7 @@ class RestoreUsers extends Command
 
 		if ($total == 0)
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_no_archived_users')->render());
+			$output->writeln(\XF::phrase('hampel_archivesite_no_archived_users'));
 			return 0;
 		}
 
@@ -106,7 +107,7 @@ class RestoreUsers extends Command
 
 			if ($count % 100 == 0)
 			{
-				$output->writeln(\XF::phrase('hampel_archivesite_restored_x_users', ['count' => number_format($count)])->render());
+				$output->writeln(\XF::phrase('hampel_archivesite_restored_x_users', ['count' => number_format($count)]));
 			}
 		}
 
