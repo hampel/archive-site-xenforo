@@ -1,60 +1,38 @@
 <?php namespace Hampel\ArchiveSite\Cli\Command;
 
-use Hampel\ArchiveSite\Config\ProtectedUsers;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
-use XF\Entity\User;
+use XF\Cli\Command\Rebuild\AbstractRebuildCommand;
 
-class RestoreUsers extends Command
+class RestoreAll extends AbstractRebuildCommand
 {
-	protected function configure()
-	{
-		$this
-			->setName('archive:restore-users')
-			->setDescription('Restore archived users by resetting their password')
-			->addOption(
-				'user',
-				'u',
-				InputOption::VALUE_REQUIRED,
-				"Restore a single user by username or email address"
-			);
-	}
+    protected function getRebuildName()
+    {
+        return 'restore-all-users';
+    }
+
+    protected function getRebuildDescription()
+    {
+        return 'Restore archived users so they can log in';
+    }
+
+    protected function getRebuildClass()
+    {
+        return 'Hampel\ArchiveSite:RestoreUsers';
+    }
+
+    protected function configure()
+    {
+        parent::configure();
+
+        $this->setName('archive:' . $this->getRebuildName());
+    }
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		/** @var \Hampel\ArchiveSite\Repository\ArchiveUsers $archiveRepo */
 		$archiveRepo = \XF::repository('Hampel\ArchiveSite:ArchiveUsers');
-
-		$usernameOrEmail = $input->getOption('user');
-		if ($usernameOrEmail)
-		{
-			$user = \XF::repository("XF:User")->getUserByNameOrEmail($usernameOrEmail, ['Auth']);
-			if (!$user)
-			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_user_x_not_found', ['user' => $usernameOrEmail]) . "</error>");
-				return 1;
-			}
-
-			if ($user->is_super_admin || ProtectedUsers::isProtected($user->user_id))
-			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_user_x_is_protected', ['user' => $usernameOrEmail]) . "</error>");
-				return 1;
-			}
-
-			$output->writeln("<info>" . \XF::phrase('hampel_archivesite_restoring_user_x', ['username' => $user->username, 'email' => $user->email]) . "</info>");
-			if (!$archiveRepo->restoreUser($user))
-			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_restoring_user_x', ['user' => $usernameOrEmail]) . "</error>");
-				return 1;
-			}
-
-			$output->writeln(\XF::phrase('hampel_archivesite_done'));
-			return 0;
-		}
 
 		$finder = $archiveRepo->protectedUsers();
 		$protectedCount = $finder->total();
@@ -84,35 +62,6 @@ class RestoreUsers extends Command
 			return 0;
 		}
 
-		$finder = $archiveRepo->archivedUsers();
-		$total = $finder->total();
-		$archived = $finder->fetch();
-
-		if ($total == 0)
-		{
-			$output->writeln(\XF::phrase('hampel_archivesite_no_archived_users'));
-			return 0;
-		}
-
-		$count = 0;
-		foreach ($archived as $user)
-		{
-			$count++;
-
-			if (!$archiveRepo->restoreUser($user))
-			{
-				$output->writeln("<error>" . \XF::phrase('hampel_archivesite_error_restoring_user_x', ['user' => $user->username]) . "</error>");
-				return 1;
-			}
-
-			if ($count % 100 == 0)
-			{
-				$output->writeln(\XF::phrase('hampel_archivesite_restored_x_users', ['count' => number_format($count)]));
-			}
-		}
-
-		$output->writeln("<info>" . \XF::phrase('hampel_archivesite_successfully_restored_x_users', ['count' => number_format($count)]) . "</info>");
-
-		return 0;
+        return parent::execute($input, $output);
 	}
 }

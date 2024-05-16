@@ -1,7 +1,6 @@
-<?php
+<?php namespace Hampel\ArchiveSite\Job;
 
-namespace Hampel\ArchiveSite\Job;
-
+use XF\Entity\User;
 use XF\Job\AbstractRebuildJob;
 
 class ArchiveUsers extends AbstractRebuildJob
@@ -9,6 +8,21 @@ class ArchiveUsers extends AbstractRebuildJob
 	protected $defaultData = [
 		'protectedUsers' => [],
 	];
+
+    protected function setupData(array $data)
+    {
+        if (empty($data['protectedUsers']))
+        {
+            $data['protectedUsers'] = $this
+                ->getArchiveRepo()
+                ->protectedUsers()
+                ->pluckFrom('user_id')
+                ->fetch()
+                ->toArray();
+        }
+
+        return parent::setupData($data);
+    }
 
 	protected function getNextIds($start, $batch)
 	{
@@ -28,7 +42,7 @@ class ArchiveUsers extends AbstractRebuildJob
 	protected function rebuildById($id)
 	{
 		/** @var \XF\Entity\User $user */
-		$user = $this->app->em()->find('XF:User', $id, ['Auth']);
+		$user = $this->app->em()->find('XF:User', $id, ['Auth', 'ArchivedUser']);
 		if (!$user)
 		{
 			return;
@@ -38,20 +52,38 @@ class ArchiveUsers extends AbstractRebuildJob
 
 		$db->beginTransaction();
 
-		\XF::repository('Hampel\ArchiveSite:ArchiveUsers')->archiveUser($user);
+		$this->processUser($user);
 
 		$db->commit();
 	}
 
+    protected function processUser(User $user)
+    {
+        $this->getArchiveRepo()->archiveUser($user);
+    }
+
 	public function getStatusMessage()
 	{
-		$actionPhrase = \XF::phrase('hampel_archivesite_archiving');
+		$actionPhrase = $this->getActionPhrase();
 		$typePhrase = $this->getStatusType();
 		return sprintf('%s... %s (%s)', $actionPhrase, $typePhrase, $this->data['start']);
 	}
 
+    protected function getActionPhrase()
+    {
+        return \XF::phrase('hampel_archivesite_archiving');
+    }
+
 	protected function getStatusType()
 	{
-		return \XF::phrase('hampel_archivesite_users');
+		return \XF::phrase('hampel_archivesite_user_ids');
 	}
+
+    /**
+     * @return \Hampel\ArchiveSite\Repository\ArchiveUsers
+     */
+    protected function getArchiveRepo()
+    {
+        return $this->app->repository('Hampel\ArchiveSite:ArchiveUsers');
+    }
 }
