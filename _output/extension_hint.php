@@ -9,6 +9,11 @@ namespace Hampel\ArchiveSite\XF\Entity
 	class XFCP_User extends \XF\Entity\User {}
 }
 
+namespace Hampel\ArchiveSite\XF\Finder
+{
+	class XFCP_User extends \XF\Finder\User {}
+}
+
 namespace Hampel\ArchiveSite\XF\Mail
 {
 	class XFCP_Mail extends \XF\Mail\Mail {}
