@@ -19,12 +19,16 @@
 		* Remove new posts button for guests
 	* `forum_view`
 		* Remove log in or register to post from forum view pages
+          	* replace with `Admin CP > Options > Archive Site > Content End Message` /
+              `Admin CP > Options > Archive Site > Content End Message Url`
 	* `PAGE_CONTAINER`
 		* Remove mobile what's new link for guests
 	* `thread_list_macros`
 		* Remove lock symbol from threads in thread list
 	* `thread_view`
 		* Remove log in or register to post from thread view pages
+          	* replace with `Admin CP > Options > Archive Site > Content End Message` / 
+              `Admin CP > Options > Archive Site > Content End Message Url` 
 		* Remove not open for further replies from thread view pages
 	* `widget_forum_statistics`
 		* Remove latest member from forum statistics widget
@@ -35,4 +39,16 @@
 
 		
 * Testing:
-	
+  	* Check that `Admin CP > Options > Archive Site > Home page message` is shown on forum home page 
+	* Check that `Admin CP > Options > Archive Site > Content End Message` is shown below thread list and below thread 
+      content 
+    * Set a URL in `Admin CP > Options > Archive Site > Content End Message Url` and check that the Content End Message 
+      becomes linked
+    * Check `Admin CP > Options > Archive Site > Open link in a new window` and verify that link opens in new window
+    * Go to `Admin CP > Users > Archive Site > List Protected Users` and verify that the super users are listed
+        * Add `$config['archiveSiteProtectedUsers'] = [<user ids>];` with the IDs of some users and then verify that these 
+          users become listed in Protected Users.
+    * Go to `Admin CP > Users > Archive Site > Archive Users` and confirm protected and active users are as expected
+        * check the `Confirm X active users will be archived` box and then click "Archive" 
+            * check that the previously active users are now archived, but none of the protected users have been changed
+            * check the `xf_user_authenticate` table and verify that all archived users have the `XF:NoPassword` scheme and no password data
