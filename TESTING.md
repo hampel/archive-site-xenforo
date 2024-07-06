@@ -38,8 +38,8 @@
 * Fragile points:
 
 		
-* Testing:
-  	* Check that `Admin CP > Options > Archive Site > Home page message` is shown on forum home page 
+* Testing 
+	* Check that `Admin CP > Options > Archive Site > Home page message` is shown on forum home page 
 	* Check that `Admin CP > Options > Archive Site > Content End Message` is shown below thread list and below thread 
       content 
     * Set a URL in `Admin CP > Options > Archive Site > Content End Message Url` and check that the Content End Message 

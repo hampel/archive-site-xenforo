@@ -90,7 +90,6 @@ class ArchiveUsers extends Repository
         /*
          * TODO:
          *
-         * - RECALCULATE USER COUNT
          * - CONSIDER STILL SHOWING MEMBERS WHO HAVE BEEN ARCHIVED
          *
          * - delete banned users with zero posts
