@@ -12,4 +12,4 @@ By [Simon Hampel](https://xenforo.com/community/members/sim.4264/).
 Requirements
 ------------
 
-This addon has been tested on XenForo 2.1 and should work on XF 2.2 as well
+This addon has been tested on XenForo 2.2 and 2.3
