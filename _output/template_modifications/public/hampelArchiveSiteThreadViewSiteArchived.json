@@ -3,7 +3,7 @@
     "description": "Add site archived button below thread content",
     "execution_order": 10,
     "enabled": true,
-    "action": "str_replace",
-    "find": "<xf:macro id=\"thread_status\" arg-thread=\"{$thread}\" arg-wrapperClass=\"block-outer block-outer--after\" />",
+    "action": "preg_replace",
+    "find": "#<xf:macro (id|name)=\"thread_status\" arg-thread=\"{\\$thread}\" arg-wrapperClass=\"block-outer block-outer--after\" />#simU",
     "replace": "$0\n\n\t<div class=\"block-outer block-outer--after\">\n\t\t<div class=\"block-outer-opposite\">\n\t\t\t<xf:if is=\"$xf.options.hampelArchiveSiteEndMessageUrl\">\n\t\t\t\t<xf:if is=\"$xf.options.hampelArchiveSiteEndMessageUrlTarget\">\n\t\t\t\t\t<xf:button href=\"{{ $xf.options.hampelArchiveSiteEndMessageUrl }}\" class=\"button--link button--wrap\" target=\"_blank\">\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t\t</xf:button>\n\t\t\t\t\t<xf:else />\n\t\t\t\t\t<xf:button href=\"{{ $xf.options.hampelArchiveSiteEndMessageUrl }}\" class=\"button--link button--wrap\">\n\t\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t\t</xf:button>\n\t\t\t\t</xf:if>\t\t\t\t\t\t\t\t\n\t\t\t\t<xf:else />\n\t\t\t\t<span class=\"button button--link button--wrap\" style=\"cursor: default;\">\n\t\t\t\t\t{$xf.options.hampelArchiveSiteEndMessageHtml|raw}\n\t\t\t\t</span>\n\t\t\t</xf:if>\n\t\t</div>\n\t</div>"
 }
