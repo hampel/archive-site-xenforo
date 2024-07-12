@@ -4,7 +4,7 @@ use Hampel\ArchiveSite\Config\ProtectedUsers;
 
 class Mail extends XFCP_Mail
 {
-	public function setToUser(\XF\Entity\User $user)
+	public function setToUser(\XF\Entity\User $user): \XF\Mail\Mail
 	{
 		if (!$user->is_super_admin && !ProtectedUsers::isProtected($user->user_id))
 		{
