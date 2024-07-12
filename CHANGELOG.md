@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+2.0.1 (2024-07-12)
+------------------
+
+* bug fix - check to prevent mail from being sent to archived users is now compatible with both XF v2.2 and v2.3
+
 2.0.0 (2024-07-06)
 ------------------
 
