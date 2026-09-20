@@ -117,7 +117,7 @@ class Archive extends AbstractController
 		$active = $activeUsers->count();
 
 		$viewParams = compact('protected', 'active', 'archived', 'partiallyArchived');
-		return $this->view('ampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
+		return $this->view('Hampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
 	}
 
 	public function actionArchiveUsersAction()
