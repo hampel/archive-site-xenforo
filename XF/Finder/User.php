@@ -9,7 +9,8 @@ class User extends XFCP_User
         $this->with('ArchivedUser', false);
 
         $this->where('is_banned', false);
-//        $this->where('user_state', 'valid');
+        // core checks user_state = 'valid'; widened so an archived user whose previous
+        // state was valid still counts, keeping member counts and statistics honest
         $this->whereOr(
             ['user_state', 'valid'],
             ['ArchivedUser.previous_state', 'valid']
