@@ -1,1 +1,0 @@
-Successfully restored {count} users

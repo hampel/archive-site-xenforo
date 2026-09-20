@@ -107,12 +107,6 @@
         "version_string": "1.1.1",
         "hash": "d74a89297cae6a74adf1581c59997449"
     },
-    "hampel_archivesite_archived_x_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "880b1a94afd0add86ae3d739bdd33607"
-    },
     "hampel_archivesite_archiving.txt": {
         "global_cache": false,
         "version_id": 1000011,
@@ -191,23 +185,11 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "70a8c3b83841da3dd724dd15332fbdd7"
     },
-    "hampel_archivesite_no_active_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "0261b057cac8e0c8f4ce804b1594cbd1"
-    },
     "hampel_archivesite_no_active_users_found.txt": {
         "global_cache": false,
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "b46eb4b74e2730747ed23057f79b5cad"
-    },
-    "hampel_archivesite_no_archived_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "01ae7ac34b22615908851bdd1d608c2a"
     },
     "hampel_archivesite_no_protected_users_found.txt": {
         "global_cache": false,
@@ -275,12 +257,6 @@
         "version_string": "1.0.0 Alpha 1",
         "hash": "31e7f6604251dc7ae5abf7e72333f166"
     },
-    "hampel_archivesite_restored_x_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "77df5cb46f3fe0d787fcdee8c59e5b05"
-    },
     "hampel_archivesite_restoring.txt": {
         "global_cache": false,
         "version_id": 1010170,
@@ -292,18 +268,6 @@
         "version_id": 1000011,
         "version_string": "1.0.0 Alpha 1",
         "hash": "fd4271ceb952bbee4d52a6cbb0da916c"
-    },
-    "hampel_archivesite_successfully_archived_x_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "60f41310feb6e3615b84975dc37746b7"
-    },
-    "hampel_archivesite_successfully_restored_x_users.txt": {
-        "global_cache": false,
-        "version_id": 1000011,
-        "version_string": "1.0.0 Alpha 1",
-        "hash": "ac393f4d5adad0abf4197c6da82b2a0c"
     },
     "hampel_archivesite_type_yes_to_continue.txt": {
         "global_cache": false,
