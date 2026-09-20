@@ -123,10 +123,33 @@ be a floor change**, whether or not `addon.json` said so.
 
 ## Template modifications match stock markup exactly, so an XF upgrade breaks them quietly
 
-All fourteen are `str_replace` against literal text copied out of core templates, tabs included.
-When XF edits one of those templates the find string stops matching, the modification reports
-zero replacements in the ACP and the page renders as stock — a guest sees the log-in prompts and
-the birthdays the add-on exists to hide, and nothing raises an error.
+Twelve of the fourteen are `str_replace` against literal text copied out of core templates, tabs
+included. When XF edits one of those templates the find string stops matching, the modification
+reports zero replacements and the page renders as stock — a guest sees the log-in prompts and the
+birthdays the add-on exists to hide, and nothing raises an error. **The status column still says
+`ok`**: that reports whether the modification ran, not whether it matched anything.
+
+**The check is `apply_count`, and it is worth running after every XF upgrade**, because nothing
+else will tell you. `xf_template_modification_log` holds one row per template per modification:
+
+```sql
+SELECT m.modification_key, SUM(l.apply_count) AS applied
+FROM xf_template_modification m
+LEFT JOIN xf_template_modification_log l ON (l.modification_id = m.modification_id)
+WHERE m.addon_id = 'Hampel/ArchiveSite'
+GROUP BY m.modification_id;
+```
+
+Any row at 0 is a dead modification. Two were, on XF 2.3, and both are now `preg_replace` for the
+reason below.
+
+**The two `preg_replace` ones exist because an exact match cannot span both supported XF
+versions.** `hampelArchiveSitePageContainerWhatsNew` broke on 2.3 when the nav group gained a
+wrapping `div` and the block moved one tab deeper — matching 2.3's indentation exactly would have
+broken 2.2, which matched fine. `hampelArchiveSiteXFMGMediaViewMacros` broke when XF 2.3 replaced
+`<xf:macro template="X" name="Y">` with `<xf:macro id="X::Y">`, so its find carries an alternation
+for both spellings. Reach for `preg_replace` whenever a find has to tolerate reformatting or a
+syntax change, not as a default — an exact match that works is easier to read and to verify.
 
 Two patterns recur and are worth recognising before editing one:
 
