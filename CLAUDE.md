@@ -114,8 +114,12 @@ list, and an archived forum's statistics collapse overnight. The override widens
   incompatible signature is a fatal, not a warning. Any further change to that method has to be
   made in both branches.
 
-`addon.json` still declares `XF 2.1.0+` while the README says 2.2 and 2.3, and the branch above
-knows about exactly two versions. Treat 2.2 and 2.3 as the supported range.
+The supported range is **XF 2.2 and 2.3**, and all three places that state it agree: the
+`require.XF` floor, the README, and the branch above, which knows about exactly those two. The
+class extensions all name the pre-2.3 core classes — `XF\Service\User\Login`, not
+`LoginService` — which is what a 2.2 floor requires and what keeps working on 2.3, since 2.3
+aliases the old names forward and 2.2 has no such mechanism. **Adopting the 2.3 spellings would
+be a floor change**, whether or not `addon.json` said so.
 
 ## Template modifications match stock markup exactly, so an XF upgrade breaks them quietly
 

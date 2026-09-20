@@ -14,8 +14,8 @@
     },
     "require": {
         "XF": [
-            "2010070",
-            "XenForo 2.1.0+"
+            "2020070",
+            "XenForo 2.2.0+"
         ]
     },
     "icon": "fa-archive"
