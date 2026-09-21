@@ -106,15 +106,16 @@ What it covers, by class:
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
+| `XF\Service\User\LoginTest` | an archived user is told the site is archived; a protected user gets core's failure, recorded; the core behaviour copied around it still holds |
+| `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
+| `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
 
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**Not yet covered: the `Login`, `PasswordReset` and `Finder\User` extensions.** The test
-framework's add-on isolation drops a class extension registered on a pre-2.3 class name, and those
-three are exactly the renamed classes this add-on's 2.2 floor requires it to name. Under isolation a
-test of them would exercise XenForo's core class instead, so they wait on a framework fix. Until
-then they are manual, below.
+**The three extensions on renamed classes need the test framework at `df45a93` or later** —
+`Login`, `PasswordReset` and `Finder\User`. Earlier revisions dropped them under isolation, so their
+tests would silently exercise core instead.
 
 The remaining checks are the ones a unit suite cannot reach:
 
@@ -185,9 +186,6 @@ evidence rather than assumption. Both are worth re-running whenever the floor mo
   `restoreUser()` against real accounts, but the `Archive Users` form is a `POST` behind a CSRF
   token, which a test cannot send — so the button, the job it queues and the job's batching are
   untested. Run it on a disposable instance, never the development forum.
-- **Login and password reset for an archived user.** Their extensions are not covered yet — see
-  *Automated*. Check that an archived user gets the "site archived" message on a failed login, and
-  cannot trigger a password reset.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
   at all without it, so an install lacking XFMG proves nothing either way.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms

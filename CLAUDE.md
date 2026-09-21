@@ -55,7 +55,7 @@ The suite runs against a real forum's database, which is what makes it worth hav
 three rules non-negotiable:
 
 - **Anything that writes uses `UsesDatabaseTransactions`**, so archiving a user in a test archives
-  nobody. That covers the repository, the controller, the finder and the mail tests.
+  nobody. Six of the test classes write and all six use it; the rest only read.
 - **Borrow users, never create them.** With isolation on, XenForo builds a user `INSERT` from the
   structure it has loaded, so a `NOT NULL` column another installed add-on adds to a user table has
   no value and the save fails. The tests take an existing active user inside the transaction.
@@ -67,11 +67,11 @@ a test that passes with the behaviour it names deleted is counted as coverage an
 One did, and was removed — the finder's own `total()` and `fetch()` agree whether or not super
 admins leak, because the discrepancy users saw lived in the controller.
 
-**`Login`, `PasswordReset` and `Finder\User` have no tests yet.** The framework's isolation drops a
-class extension registered on a pre-2.3 class name, and those three are exactly the renamed ones
-this add-on's 2.2 floor requires it to use — so under isolation the tests would exercise XenForo's
-core class instead of this add-on's. They wait on a framework fix rather than being written against
-a test app that would silently ignore them.
+**The test framework has to be at `df45a93` or later.** Before it, add-on isolation dropped a class
+extension registered on a class name XenForo 2.3 renamed — and `Login`, `PasswordReset` and
+`Finder\User` are exactly the renamed names this add-on's 2.2 floor requires. Their tests would then
+have exercised core's classes and passed or failed for the wrong reason. `composer.lock` pins the
+fixed revision; check it has not gone backwards before trusting a green run.
 
 ## Two unrelated features share one add-on
 

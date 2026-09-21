@@ -68,7 +68,7 @@
             "dist": {
                 "type": "path",
                 "url": "/home/hampel/packages/xenforo-test-framework",
-                "reference": "454168af5a3e8d603fd4738e21f9364ca0d1a253"
+                "reference": "df45a936b74db78ca7a9f5f6f04489775ee5446e"
             },
             "require": {
                 "mockery/mockery": "^1.6",

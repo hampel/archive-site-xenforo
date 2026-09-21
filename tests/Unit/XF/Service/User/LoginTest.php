@@ -1,0 +1,108 @@
+<?php
+
+namespace Tests\Unit\XF\Service\User;
+
+use Hampel\Testing\Concerns\UsesDatabaseTransactions;
+use Tests\TestCase;
+use XF\Entity\User;
+
+/**
+ * validate() is a full copy of core rather than a call through it, because the "site archived"
+ * message has to replace the authentication failure rather than follow it. A copy goes stale when
+ * core changes, so these pin both halves: the add-on's message, and the core behaviour it
+ * reproduces around it.
+ *
+ * Failed logins are recorded in xf_login_attempt, so every test runs inside a transaction.
+ */
+class LoginTest extends TestCase
+{
+	use UsesDatabaseTransactions;
+
+	protected function validate(string $login, string $password, &$error = null)
+	{
+		return $this->app()->service('XF:User\Login', $login, '127.0.0.1')->validate($password, $error);
+	}
+
+	protected function attempts(string $login): int
+	{
+		return (int) $this->app()->db()->fetchOne(
+			'SELECT COUNT(*) FROM xf_login_attempt WHERE login = ?',
+			$login
+		);
+	}
+
+	protected function anArchivedUser(): User
+	{
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
+		$user = $repo->activeUsers()->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+
+		$repo->archiveUser($user);
+		$this->app()->em()->clearEntityCache();
+
+		return $user;
+	}
+
+	protected function aSuperAdmin(): User
+	{
+		$user = $this->app()->finder('XF:User')
+			->with('Admin', true)
+			->where('Admin.is_super_admin', 1)
+			->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs a super admin on the forum');
+		}
+
+		return $user;
+	}
+
+	public function test_an_archived_user_is_told_the_site_is_archived(): void
+	{
+		$user = $this->anArchivedUser();
+
+		$result = $this->validate($user->username, 'any password at all', $error);
+
+		$this->assertNull($result);
+		$this->assertSame('hampel_archivesite_login_denied', $error->getName());
+	}
+
+	public function test_a_protected_user_gets_the_ordinary_failure_and_it_is_recorded(): void
+	{
+		$admin = $this->aSuperAdmin();
+		$before = $this->attempts($admin->username);
+
+		$result = $this->validate($admin->username, 'not-the-password-' . mt_rand(), $error);
+
+		$this->assertNull($result);
+		$this->assertSame('incorrect_password', $error->getName());
+		$this->assertSame($before + 1, $this->attempts($admin->username));
+	}
+
+	/**
+	 * Reproduced from core: an empty password is refused without logging an attempt.
+	 */
+	public function test_an_empty_password_is_refused_without_recording_an_attempt(): void
+	{
+		$admin = $this->aSuperAdmin();
+		$before = $this->attempts($admin->username);
+
+		$this->assertNull($this->validate($admin->username, '', $error));
+
+		$this->assertSame('incorrect_password', $error->getName());
+		$this->assertSame($before, $this->attempts($admin->username));
+	}
+
+	/**
+	 * Reproduced from core: an unknown login names what was typed.
+	 */
+	public function test_an_unknown_login_is_reported_as_not_found(): void
+	{
+		$this->assertNull($this->validate('no-such-user-' . mt_rand(), 'whatever', $error));
+
+		$this->assertSame('requested_user_x_not_found', $error->getName());
+	}
+}
