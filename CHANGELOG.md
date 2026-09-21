@@ -23,6 +23,8 @@ CHANGELOG
 ------------------
 
 * bugfix: hide birthday and thread not open message only for guests
+* rename CLI commands out of the xf namespace - `xf:archive-users` and `xf:restore-users` become
+  `hg:archive-users` and `hg:restore-users`
 
 1.1.0 (2020-05-28)
 ------------------
