@@ -39,8 +39,11 @@ class Login extends XFCP_Login
 			// password, so there is nothing to guess and no attempt to count. Anyone who still has a
 			// password takes core's path below, so their failures are recorded and XenForo's
 			// brute-force limit applies to them.
-			if ($auth
-				&& $auth->scheme_class == 'XF:NoPassword'
+			$hasNoPassword = $auth
+				? $auth->scheme_class == 'XF:NoPassword'
+				: (bool) $user->ArchivedUser; // no authentication row at all: archived if we archived it
+
+			if ($hasNoPassword
 				&& !ProtectedUsers::isProtected($user->user_id)
 				&& !$user->getIsSuperAdmin()
 			)

@@ -53,10 +53,16 @@ class ArchiveUsers extends Repository
      */
     public function archivedUsers()
     {
+        // Auth is a left join: an account with no authentication row at all is archived like any
+        // other, and must not vanish from the list for want of a password it never had
         return $this->finder('XF:User')
-            ->with(['Auth', 'ArchivedUser'], true)
+            ->with('Auth')
+            ->with('ArchivedUser', true)
             ->where('user_id', '!=', $this->protectedUserIds())
-            ->where('Auth.scheme_class', '=', 'XF:NoPassword')
+            ->whereOr([
+                ['Auth.scheme_class', '=', 'XF:NoPassword'],
+                ['Auth.user_id', '=', null],
+            ])
             ->where('ArchivedUser.previous_state', '!=', null);
     }
 
@@ -65,11 +71,16 @@ class ArchiveUsers extends Repository
 	 */
 	public function activeUsers()
 	{
+		// Auth is a left join, for the same reason as in archivedUsers(): an account with no
+		// authentication row is still an account the archive job will reach
 		return $this->finder('XF:User')
-            ->with('Auth', true)
+            ->with('Auth')
             ->with('ArchivedUser', false)
             ->where('user_id', '!=', $this->protectedUserIds())
-            ->where('Auth.scheme_class', '!=', 'XF:NoPassword')
+            ->whereOr([
+                ['Auth.scheme_class', '!=', 'XF:NoPassword'],
+                ['Auth.user_id', '=', null],
+            ])
             ->where('ArchivedUser.previous_state', '=', null);
 	}
 
@@ -84,9 +95,13 @@ class ArchiveUsers extends Repository
 		// clear User Remember records so cookies no longer work
 		$this->repository('XF:UserRemember')->clearUserRememberRecords($user->user_id);
 
-        // remove users password
-        $user->Auth->setNoPassword();
-        $user->Auth->save();
+        // remove users password - an account with no authentication row has none to remove, and
+        // is archived all the same rather than stopping the run
+        if ($user->Auth)
+        {
+            $user->Auth->setNoPassword();
+            $user->Auth->save();
+        }
 
         if (!$user->ArchivedUser)
         {
@@ -120,8 +135,11 @@ class ArchiveUsers extends Repository
         }
 
         // reset a users password so they can log in again (after they do a forgot password)
-		$user->Auth->resetPassword();
-		$user->Auth->save();
+		if ($user->Auth)
+		{
+			$user->Auth->resetPassword();
+			$user->Auth->save();
+		}
 
         if ($user->ArchivedUser)
         {

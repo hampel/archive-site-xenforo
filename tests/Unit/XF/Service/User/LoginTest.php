@@ -127,6 +127,28 @@ class LoginTest extends TestCase
 	}
 
 	/**
+	 * Archived like any other account, so it gets the same message - it has no password to guess
+	 * either, having never had an authentication row at all.
+	 */
+	public function test_an_archived_account_with_no_auth_record_is_told_the_site_is_archived(): void
+	{
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
+		$user = $repo->activeUsers()->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+		$this->app()->db()->delete('xf_user_authenticate', 'user_id = ?', $user->user_id);
+		$this->app()->em()->clearEntityCache();
+		$repo->archiveUser($this->app()->em()->find('XF:User', $user->user_id, ['ArchivedUser']));
+		$this->app()->em()->clearEntityCache();
+
+		$this->assertNull($this->validate($user->username, 'anything', $error));
+
+		$this->assertSame('hampel_archivesite_login_denied', $error->getName());
+	}
+
+	/**
 	 * Reproduced from core: an empty password is refused without logging an attempt.
 	 */
 	public function test_an_empty_password_is_refused_without_recording_an_attempt(): void

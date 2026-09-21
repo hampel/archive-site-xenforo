@@ -58,7 +58,7 @@ The suite runs against a real forum's database, which is what makes it worth hav
 three rules non-negotiable:
 
 - **Anything that writes uses `UsesDatabaseTransactions`**, so archiving a user in a test archives
-  nobody. Six of the test classes write and all six use it; the rest only read.
+  nobody. Seven of the test classes write and all seven use it; the rest only read.
 - **Borrow users, never create them.** With isolation on, XenForo builds a user `INSERT` from the
   structure it has loaded, so a `NOT NULL` column another installed add-on adds to a user table has
   no value and the save fails. The tests take an existing active user inside the transaction.
@@ -121,9 +121,16 @@ each:
 | finder | the user has | means |
 |---|---|---|
 | `protectedUsers()` | super admin, or an ID in `config.php` | never touched by a run |
-| `activeUsers()` | a real password, no archive row, not protected | not yet archived |
-| `archivedUsers()` | `XF:NoPassword` and an archive row | archived by this add-on, restorable |
+| `activeUsers()` | a real password or no authentication row at all, no archive row, not protected | not yet archived |
+| `archivedUsers()` | an archive row, and no password - `XF:NoPassword` or no authentication row | archived by this add-on, restorable |
 | `partiallyArchivedUsers()` | `XF:NoPassword`, no archive row | password removed some other way |
+
+**An account can have no `xf_user_authenticate` row at all** — a direct insert, a partial import,
+another add-on creating users. `Auth` is therefore a left join in `activeUsers()` and
+`archivedUsers()`, and `archiveUser()` and `restoreUser()` skip only the password step for such an
+account. Until 2.0.2 every finder inner-joined `Auth`, so the account appeared in no count or list,
+while the archive job, which walks every row in `xf_user`, crashed on it part-way and left every
+later account active.
 
 `partiallyArchivedUsers` is the interesting one: it catches accounts that lost their password
 before this add-on existed, or by some other route. They cannot be restored, because nothing

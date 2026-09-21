@@ -43,6 +43,25 @@ class PasswordResetTest extends TestCase
 	}
 
 	/**
+	 * An archived account with no authentication row is refused like any other, and reading its
+	 * missing Auth must not raise a warning on the way.
+	 */
+	public function test_an_archived_account_with_no_auth_record_cannot_start_a_reset(): void
+	{
+		$user = $this->anActiveUser();
+		$this->app()->db()->delete('xf_user_authenticate', 'user_id = ?', $user->user_id);
+		$this->app()->em()->clearEntityCache();
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
+		$repo->archiveUser($this->app()->em()->find('XF:User', $user->user_id, ['ArchivedUser']));
+		$this->app()->em()->clearEntityCache();
+		$user = $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
+
+		$this->assertFalse($this->canTrigger($user, $error));
+
+		$this->assertSame('hampel_archivesite_password_reset_denied', $error->getName());
+	}
+
+	/**
 	 * The refusal is keyed on the password being absent, not on the user being unprotected, so an
 	 * ordinary member who still has a password is left to core.
 	 */

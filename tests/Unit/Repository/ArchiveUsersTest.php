@@ -58,6 +58,17 @@ class ArchiveUsersTest extends TestCase
 		return $this->app()->em()->find('XF:User', $userId, ['Auth', 'ArchivedUser']);
 	}
 
+	/**
+	 * An ordinary account with its authentication row removed, inside the test's transaction.
+	 */
+	protected function anAccountWithNoAuthRecord(): User
+	{
+		$user = $this->anActiveUser();
+		$this->app()->db()->delete('xf_user_authenticate', 'user_id = ?', $user->user_id);
+
+		return $this->reload($user->user_id);
+	}
+
 	protected function idsOf(\XF\Mvc\Entity\Finder $finder): array
 	{
 		return array_map('intval', array_values($finder->pluckFrom('user_id')->fetch()->toArray()));
@@ -215,6 +226,55 @@ class ArchiveUsersTest extends TestCase
 		$restored = $this->reload($user->user_id);
 		$this->assertNotSame('XF:NoPassword', $restored->Auth->scheme_class);
 		$this->assertNotEquals($originalAuth, $restored->Auth->data);
+	}
+
+	// ---- accounts with no authentication record -------------------------------------------------
+
+	/**
+	 * The regression for the finders: every one inner-joined Auth, so an account with no
+	 * authentication row was in no set at all - in no count and no list, while the archive job,
+	 * which walks every account, still reached it.
+	 */
+	public function test_every_unprotected_account_is_in_exactly_one_set(): void
+	{
+		$this->anAccountWithNoAuthRecord();
+		$protected = $this->repo()->protectedUserIds();
+		$sets = [];
+		foreach (['activeUsers', 'archivedUsers', 'partiallyArchivedUsers'] AS $method)
+		{
+			$sets[$method] = $this->idsOf($this->repo()->$method());
+		}
+
+		$all = array_map('intval', $this->app()->db()->fetchAllColumn('SELECT user_id FROM xf_user'));
+		foreach (array_diff($all, $protected) AS $id)
+		{
+			$in = array_keys(array_filter($sets, function ($ids) use ($id) { return in_array($id, $ids); }));
+			$this->assertCount(1, $in, "user $id is in " . ($in ? implode(', ', $in) : 'no set'));
+		}
+	}
+
+	public function test_an_account_with_no_auth_record_moves_from_active_to_archived(): void
+	{
+		$user = $this->anAccountWithNoAuthRecord();
+		$this->assertContains($user->user_id, $this->idsOf($this->repo()->activeUsers()));
+
+		$this->assertTrue($this->repo()->archiveUser($user));
+
+		$this->assertDatabaseHas('xf_user', ['user_id' => $user->user_id, 'user_state' => 'disabled']);
+		$this->assertContains($user->user_id, $this->idsOf($this->repo()->archivedUsers()));
+		$this->assertNotContains($user->user_id, $this->idsOf($this->repo()->activeUsers()));
+	}
+
+	public function test_an_account_with_no_auth_record_can_be_restored(): void
+	{
+		$user = $this->anAccountWithNoAuthRecord();
+		$stateBefore = $user->user_state;
+		$this->repo()->archiveUser($user);
+
+		$this->assertTrue($this->repo()->restoreUser($this->reload($user->user_id)));
+
+		$this->assertDatabaseHas('xf_user', ['user_id' => $user->user_id, 'user_state' => $stateBefore]);
+		$this->assertDatabaseMissing('xf_archivesite_user', ['user_id' => $user->user_id]);
 	}
 
 	public function test_restoring_refuses_a_super_admin(): void
