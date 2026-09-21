@@ -132,6 +132,13 @@ account. Until 2.0.2 every finder inner-joined `Auth`, so the account appeared i
 while the archive job, which walks every row in `xf_user`, crashed on it part-way and left every
 later account active.
 
+**Keep a `User` entity in step with the database when changing its archive row.** XenForo's
+queue runner, `Job\Manager::runQueue()`, runs every due job in one request through one entity
+manager, so an archive job and a restore job can share cached entities. `archiveUser()` once
+created the row without hydrating `$user->ArchivedUser`, and a restore in the same request saw no
+row, skipped every account and reported success. Both methods now `hydrateRelation()` after the
+write, and the job tests deliberately do not clear the entity cache, so they fail if that returns.
+
 `partiallyArchivedUsers` is the interesting one: it catches accounts that lost their password
 before this add-on existed, or by some other route. They cannot be restored, because nothing
 recorded what their `user_state` used to be.

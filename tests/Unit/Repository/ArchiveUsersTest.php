@@ -228,6 +228,30 @@ class ArchiveUsersTest extends TestCase
 		$this->assertNotEquals($originalAuth, $restored->Auth->data);
 	}
 
+	/**
+	 * The regression. archiveUser() created the archive row separately and never hydrated the
+	 * relation, so the same entity went on reading ArchivedUser as null. Archiving it again then
+	 * tried to insert a second row, and restoring it saw no row and did nothing - which is what a
+	 * restore job did when it ran in the same queue request as the archive job, skipping every
+	 * account and reporting success. No reload here, deliberately: the stale entity is the point.
+	 */
+	public function test_the_same_entity_can_be_archived_twice_and_then_restored(): void
+	{
+		$user = $this->anActiveUser();
+		$previousState = $user->user_state;
+
+		$this->assertTrue($this->repo()->archiveUser($user));
+		$this->assertNotNull($user->ArchivedUser, 'the entity does not know it was archived');
+		$this->assertTrue($this->repo()->archiveUser($user));
+		$this->assertDatabaseCount('xf_archivesite_user', 1, ['user_id' => $user->user_id]);
+
+		$this->assertTrue($this->repo()->restoreUser($user));
+
+		$this->assertNull($user->ArchivedUser, 'the entity does not know it was restored');
+		$this->assertDatabaseHas('xf_user', ['user_id' => $user->user_id, 'user_state' => $previousState]);
+		$this->assertDatabaseMissing('xf_archivesite_user', ['user_id' => $user->user_id]);
+	}
+
 	// ---- accounts with no authentication record -------------------------------------------------
 
 	/**

@@ -113,6 +113,11 @@ class ArchiveUsers extends Repository
             ]);
 
             $archivedUser->save();
+
+            // Keep this entity in step with the database. Left unhydrated, the relation still reads
+            // null for as long as the entity is cached - so a restore run later in the same request,
+            // as XenForo's queue runner can do, finds no archive row and silently restores nothing.
+            $user->hydrateRelation('ArchivedUser', $archivedUser);
         }
 
         $user->user_state = 'disabled';
@@ -147,6 +152,7 @@ class ArchiveUsers extends Repository
             $user->save();
 
             $user->ArchivedUser->delete();
+            $user->hydrateRelation('ArchivedUser', null);
         }
 
         return true;

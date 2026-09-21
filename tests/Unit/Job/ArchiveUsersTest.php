@@ -26,11 +26,9 @@ class ArchiveUsersTest extends TestCase
 	 */
 	protected function runJob(string $class, array $data = []): void
 	{
-		// Each job starts with an empty entity cache, as it would in its own request. In one process
-		// the archive job leaves each User cached with its ArchivedUser relation still null - the
-		// row is created separately and never hydrated back - so a restore run straight after it
-		// would see no archive row and restore nothing. In production the two never share a process.
-		$this->app()->em()->clearEntityCache();
+		// The entity cache is deliberately NOT cleared between jobs. XF\Job\Manager::runQueue() runs
+		// every due job in one request through one entity manager, so an archive job and a restore
+		// job can share it in production - and a test that cleared it would pass where a forum fails.
 
 		$passes = 0;
 		do
