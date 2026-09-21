@@ -9,7 +9,8 @@ CHANGELOG
 2.0.0 (2024-07-06)
 ------------------
 
-* rename CLI commands to move them out of the xf namespace and into the archive namespace
+* rename CLI commands into the archive namespace - `hg:archive-users` and `hg:restore-users` are
+  replaced by `archive:archive-all-users` and `archive:restore-all-users`
 * clean up template modifications to make them more reliable
 * add new option "ArchiveSiteEndMessageUrlTarget" to choose whether to open end message URL in a new window
 * fix index pointing to an invalid template - redirect to an existiing instead
