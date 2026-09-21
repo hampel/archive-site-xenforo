@@ -1,16 +1,7 @@
 {
     "license": "MIT",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/home/hampel/packages/xenforo-test-framework",
-            "options": {
-                "symlink": false
-            }
-        }
-    ],
     "require-dev": {
-        "hampel/xenforo-test-framework": "@dev",
+        "hampel/xenforo-test-framework": "^5.2",
         "phpunit/phpunit": "^12.0"
     },
     "autoload-dev": {

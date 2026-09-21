@@ -102,7 +102,7 @@ What it covers, by class:
 |---|---|
 | `Config\ProtectedUsersTest` | the config list is read correctly, including a scalar and an empty value |
 | `Repository\ArchiveUsersTest` | the four finders never overlap and never include a protected user; archiving and restoring change exactly what they should, and refuse protected users and super admins |
-| `Admin\Controller\ArchiveTest` | each page's totals agree with its rows and with the finders; an ordinary admin is refused |
+| `Admin\Controller\ArchiveTest` | each page's totals agree with its rows and with the finders; the archive button refuses without its confirmation, refuses a `GET`, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
@@ -113,9 +113,9 @@ What it covers, by class:
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The three extensions on renamed classes need the test framework at `df45a93` or later** —
-`Login`, `PasswordReset` and `Finder\User`. Earlier revisions dropped them under isolation, so their
-tests would silently exercise core instead.
+**The suite needs the test framework at 5.2 or later** — `composer.json` requires `^5.2`. Older
+releases drop the `Login`, `PasswordReset` and `Finder\User` extensions under isolation, so their
+tests would silently exercise core, and have no `callAction()` for the archive button.
 
 The remaining checks are the ones a unit suite cannot reach:
 
@@ -182,10 +182,9 @@ evidence rather than assumption. Both are worth re-running whenever the floor mo
 - **The options render as intended.** That the home page message appears on the forum home; that
   the content end message appears below both the thread list and the thread content; that setting
   a URL makes it a link; that the new-window option opens it in one.
-- **The archive button runs the job end to end.** The suite proves `archiveUser()` and
-  `restoreUser()` against real accounts, but the `Archive Users` form is a `POST` behind a CSRF
-  token, which a test cannot send — so the button, the job it queues and the job's batching are
-  untested. Run it on a disposable instance, never the development forum.
+- **The archive job run end to end.** The suite proves the button queues it correctly and that
+  `archiveUser()` and `restoreUser()` behave, but not the job's own batching over every account.
+  Run it on a disposable instance, never the development forum.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
   at all without it, so an install lacking XFMG proves nothing either way.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms

@@ -73,6 +73,73 @@ class ArchiveTest extends TestCase
 		$this->assertReplyParam($reply, 'partiallyArchived', $repo->partiallyArchivedUsers()->total());
 	}
 
+	// ---- the archive button: a POST, so callAction() rather than dispatch() -------------------------
+
+	/**
+	 * The form's checkbox is the confirmation. Pressed without it ticked, nothing is queued.
+	 */
+	public function test_the_archive_button_without_the_confirmation_ticked_is_refused(): void
+	{
+		$this->fakesJobs();
+
+		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [
+			'confirm_archive' => '1',
+		]);
+
+		$this->assertReplyIsError($reply);
+		$this->assertStringContainsString(
+			(string) \XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'),
+			implode(' ', array_map('strval', (array) $this->replyErrors($reply)))
+		);
+		$this->assertNoJobsQueued();
+	}
+
+	/**
+	 * Confirmed, it queues the archive job - once, under a fixed key so a double submit cannot run
+	 * two - carrying the protected list worked out now, and sends the admin to watch it run.
+	 */
+	public function test_the_confirmed_archive_button_queues_the_job_with_the_protected_users(): void
+	{
+		$this->fakesJobs();
+		$protected = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->protectedUserIds();
+
+		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [
+			'confirm_archive' => '1',
+			'actions' => ['archive' => '1'],
+		]);
+
+		$this->assertReplyIsRedirect($reply);
+		$this->assertStringContainsString('tools/run-job', $reply->getUrl());
+		$this->assertJobQueuedTimes('Hampel\ArchiveSite:ArchiveUsers', 1);
+		$this->assertJobQueued('Hampel\ArchiveSite:ArchiveUsers', function ($job) use ($protected)
+		{
+			return $job['unique_key'] === 'archiveUsers'
+				&& $job['execute_data']['protectedUsers'] === $protected;
+		});
+	}
+
+	public function test_the_archive_action_refuses_a_get(): void
+	{
+		$this->fakesJobs();
+
+		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [], [], 'GET');
+
+		$this->assertReplyIsError($reply, 405);
+		$this->assertNoJobsQueued();
+	}
+
+	/**
+	 * callAction() skips preDispatch(), so the super-admin guard on the one destructive action is
+	 * proved here with dispatch() instead.
+	 */
+	public function test_an_ordinary_admin_cannot_reach_the_archive_action(): void
+	{
+		$admin = $this->actingAsMember(['is_admin' => true]);
+		$this->setVisitorAdminPermissions($admin, ['user' => true]);
+
+		$this->assertReplyIsError($this->dispatch('archive/archive-users/action', 'admin'), 403);
+	}
+
 	/**
 	 * Admin permissions are not enough: every action but the index needs a super admin, because
 	 * an archive run can lock the whole forum out.

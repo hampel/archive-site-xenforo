@@ -47,9 +47,12 @@ Built on `hampel/xenforo-test-framework` v5, isolated to this add-on through `$a
 nothing Composer installs can reach a release, and `config.platform.php` sits at 8.3 for the test
 framework's sake without that raising anything this add-on ships.
 
-**`composer.json` requires the framework from a local path repository while v5.0.0 is unreleased.**
-`composer install` therefore fails on any machine without that checkout. Replace the `repositories`
-block and the `@dev` constraint with `"^5.0"` once it is on Packagist.
+**Requires the framework at `^5.2`.** 5.0.0 fixed isolation dropping class extensions registered
+on a class name XenForo 2.3 renamed — and `Login`, `PasswordReset` and `Finder\User` are exactly the
+renamed names this add-on's 2.2 floor requires, so on an older framework their tests exercise core
+instead. 5.1.0 added `callAction()`, which is what lets the archive button's `POST` be tested at
+all: it skips the CSRF check, and `preDispatch()` with it, so the super-admin guard on that action
+is proved separately with `dispatch()`.
 
 The suite runs against a real forum's database, which is what makes it worth having and what makes
 three rules non-negotiable:
@@ -67,11 +70,6 @@ a test that passes with the behaviour it names deleted is counted as coverage an
 One did, and was removed — the finder's own `total()` and `fetch()` agree whether or not super
 admins leak, because the discrepancy users saw lived in the controller.
 
-**The test framework has to be at `df45a93` or later.** Before it, add-on isolation dropped a class
-extension registered on a class name XenForo 2.3 renamed — and `Login`, `PasswordReset` and
-`Finder\User` are exactly the renamed names this add-on's 2.2 floor requires. Their tests would then
-have exercised core's classes and passed or failed for the wrong reason. `composer.lock` pins the
-fixed revision; check it has not gone backwards before trusting a green run.
 
 ## Two unrelated features share one add-on
 
