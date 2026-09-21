@@ -1,8 +1,7 @@
 # Testing Archive Site
 
 What this add-on touches, what breaks quietly, and which checks a machine can settle on its own.
-There is no PHPUnit suite yet, so *Needs a human* is longer here than it should be — see the note
-at the end of *Automated*.
+The PHPUnit suite settles most of the last; *Automated* says what it covers and what it does not.
 
 ## Surfaces
 
@@ -89,6 +88,36 @@ moment the account is archived, by design.
 
 Run from the add-on directory. `cmd.php` resolves the install from its own location.
 
+**The suite is the first thing to run.** It runs against the development forum's real database,
+inside transactions that roll back, so it archives and restores accounts without leaving a trace.
+
+```bash
+composer install
+vendor/bin/phpunit
+```
+
+What it covers, by class:
+
+| test | settles |
+|---|---|
+| `Config\ProtectedUsersTest` | the config list is read correctly, including a scalar and an empty value |
+| `Repository\ArchiveUsersTest` | the four finders never overlap and never include a protected user; archiving and restoring change exactly what they should, and refuse protected users and super admins |
+| `Admin\Controller\ArchiveTest` | each page's totals agree with its rows and with the finders; an ordinary admin is refused |
+| `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
+| `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not |
+| `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
+
+**Every test named for a regression fails against that regression** — each was run with the
+behaviour it names removed. That is the standard to keep when adding one.
+
+**Not yet covered: the `Login`, `PasswordReset` and `Finder\User` extensions.** The test
+framework's add-on isolation drops a class extension registered on a pre-2.3 class name, and those
+three are exactly the renamed classes this add-on's 2.2 floor requires it to name. Under isolation a
+test of them would exercise XenForo's core class instead, so they wait on a framework fix. Until
+then they are manual, below.
+
+The remaining checks are the ones a unit suite cannot reach:
+
 ```bash
 php ../../../../cmd.php xf-dev:import --addon=Hampel/ArchiveSite
 php ../../../../cmd.php xf-dev:unused-phrase-finder --addon Hampel/ArchiveSite --show-unknown
@@ -144,24 +173,21 @@ echo "whatsnew:  $(echo "$out" | grep -c 'p-navgroup-link--whatsnew')"   # must 
 XenForo version the add-on declares support for — the second is what makes the declared floor
 evidence rather than assumption. Both are worth re-running whenever the floor moves.
 
-> There is no PHPUnit suite. With one, several checks below could move up here — a controller's
-> permission refusal and template modifications actually applying are both assertable by the test
-> framework. Until then they stay manual.
-
 ## Needs a human
 
-- **That a logged-in member still sees everything guests do not.** Every guest-hiding
-  modification is verified only in the negative above; nothing confirms the positive case.
+- **That a logged-in member still sees everything guests do not.** The suite confirms the
+  modifications apply and the members-online widget still renders for a member, but not what a
+  member actually sees on each page.
 - **The options render as intended.** That the home page message appears on the forum home; that
   the content end message appears below both the thread list and the thread content; that setting
   a URL makes it a link; that the new-window option opens it in one.
-- **`Admin CP > Users > Archive Site > List Protected Users` shows the super admins.** Then add
-  `$config['archiveSiteProtectedUsers'] = [<user ids>];` and confirm those users appear too.
-- **An archive run does what it says.** From `Archive Users`, confirm the protected and active
-  counts look right, tick the confirmation box, run it, then check that the previously active
-  users are archived, that **no protected user changed**, and that every archived user in
-  `xf_user_authenticate` has the `XF:NoPassword` scheme and no password data.
-- **A restore run**, and that a restored user must complete a password reset before logging in.
+- **The archive button runs the job end to end.** The suite proves `archiveUser()` and
+  `restoreUser()` against real accounts, but the `Archive Users` form is a `POST` behind a CSRF
+  token, which a test cannot send — so the button, the job it queues and the job's batching are
+  untested. Run it on a disposable instance, never the development forum.
+- **Login and password reset for an archived user.** Their extensions are not covered yet — see
+  *Automated*. Check that an archived user gets the "site archived" message on a failed login, and
+  cannot trigger a password reset.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
   at all without it, so an install lacking XFMG proves nothing either way.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms

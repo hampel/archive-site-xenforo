@@ -33,7 +33,45 @@ php ../../../../cmd.php archive:archive-user <user>   # user_id, username or ema
 php ../../../../cmd.php archive:restore-user <user>
 ```
 
-There is no `composer.json` and no PHPUnit suite. `TESTING.md` is the test plan, and it is manual.
+## Tests run against the development forum, so they borrow and roll back
+
+```bash
+composer install                                      # first time; vendor/ is gitignored
+vendor/bin/phpunit                                    # whole suite
+vendor/bin/phpunit --filter ArchiveUsersTest          # one class
+vendor/bin/phpunit --testsuite Unit                   # one suite
+```
+
+Built on `hampel/xenforo-test-framework` v5, isolated to this add-on through `$addonsToLoad` in
+`tests/TestCase.php`. **Composer is development-only here** — there is no `require` block, so
+nothing Composer installs can reach a release, and `config.platform.php` sits at 8.3 for the test
+framework's sake without that raising anything this add-on ships.
+
+**`composer.json` requires the framework from a local path repository while v5.0.0 is unreleased.**
+`composer install` therefore fails on any machine without that checkout. Replace the `repositories`
+block and the `@dev` constraint with `"^5.0"` once it is on Packagist.
+
+The suite runs against a real forum's database, which is what makes it worth having and what makes
+three rules non-negotiable:
+
+- **Anything that writes uses `UsesDatabaseTransactions`**, so archiving a user in a test archives
+  nobody. That covers the repository, the controller, the finder and the mail tests.
+- **Borrow users, never create them.** With isolation on, XenForo builds a user `INSERT` from the
+  structure it has loaded, so a `NOT NULL` column another installed add-on adds to a user table has
+  no value and the save fails. The tests take an existing active user inside the transaction.
+- **Anything that renders a template uses `fakesErrors()`.** A template error is written to the
+  forum's real `xf_error_log`, and the framework does not suppress it.
+
+**Every test that names a regression was run against that regression and fails.** Keep it that way:
+a test that passes with the behaviour it names deleted is counted as coverage and provides none.
+One did, and was removed — the finder's own `total()` and `fetch()` agree whether or not super
+admins leak, because the discrepancy users saw lived in the controller.
+
+**`Login`, `PasswordReset` and `Finder\User` have no tests yet.** The framework's isolation drops a
+class extension registered on a pre-2.3 class name, and those three are exactly the renamed ones
+this add-on's 2.2 floor requires it to use — so under isolation the tests would exercise XenForo's
+core class instead of this add-on's. They wait on a framework fix rather than being written against
+a test app that would silently ignore them.
 
 ## Two unrelated features share one add-on
 

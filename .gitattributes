@@ -9,3 +9,9 @@
 /TESTING.md       export-ignore
 /.gitattributes   export-ignore
 /.gitignore       export-ignore
+
+# The test suite is development-only, and so is Composer: this add-on has no runtime dependencies.
+/tests            export-ignore
+/phpunit.xml      export-ignore
+/composer.json    export-ignore
+/composer.lock    export-ignore
