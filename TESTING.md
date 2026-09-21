@@ -164,5 +164,11 @@ evidence rather than assumption. Both are worth re-running whenever the floor mo
 - **A restore run**, and that a restored user must complete a password reset before logging in.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
   at all without it, so an install lacking XFMG proves nothing either way.
+- **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms
+  `XF\Job\FileCleanUp`, and it runs from the job queue *after* the upgrade command returns, so an
+  upgrade that reports success proves nothing about it. Run the queue, then check the add-on
+  directory. **Do this on a disposable instance only** — the job deletes everything the new
+  release's `hashes.json` does not list, which on a working copy includes `.git` and both Claude
+  files.
 - **Appearance and judgement** — whether the end message reads well in place, and whether the
   archived forum looks coherent rather than merely stripped.

@@ -200,6 +200,30 @@ find string no longer matches.
 `TESTING.md` lists every modification and what to look at. It is the whole verification story for
 this half of the add-on — work through it after any XF upgrade, not just after a change here.
 
+## Upgrades clean up after themselves, which makes a development checkout dangerous
+
+`Setup::postUpgrade()` calls `enqueuePostUpgradeCleanUp()`, queueing `XF\Job\FileCleanUp` to
+delete anything the new release's `hashes.json` does not list. It is there because XenForo's
+extractor never deletes: 2.0.0 moved the CLI commands out of the `xf:` namespace, and an install
+upgraded from 1.x still had the old command classes on disk, still registered, because
+`XF\Cli\Runner` discovers commands by scanning `Cli/Command`.
+
+**The call is guarded on `\XF::$versionId >= 2030000` and must stay guarded.** Neither the method
+nor the job exists in XenForo 2.2, which is this add-on's declared floor, so an unguarded call is a
+fatal during the upgrade rather than a no-op.
+
+**Never apply a release zip on top of a working copy of this add-on now that the job is armed.**
+`FileCleanUp` treats the whole add-on directory as deletable and protects only `_output/`,
+`hashes.json`, `addon.json`, `build.json`, `_files/` and `_releases/`. Everything else goes,
+including `.git`, `.gitattributes`, `TESTING.md` and both Claude files. A plain checkout has no
+`hashes.json` so the job completes immediately and the danger never arises — but a zip upgrade
+applied onto a checkout writes one, which arms it for the *next* upgrade. Test upgrades on a
+disposable instance, never on a checkout.
+
+That this add-on has no Composer dependencies is what makes the job safe to arm at all: the usual
+catastrophe is `FileCleanUp` removing `vendor/composer/autoload_files.php`, which the add-on cache
+still claims exists and requires unconditionally on every request.
+
 ## Releases
 
 Bump `addon.json`'s `version_id` and `version_string` together, add the CHANGELOG entry, then

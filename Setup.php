@@ -20,6 +20,29 @@ class Setup extends AbstractSetup
         $this->createTables();
     }
 
+	/**
+	 * Remove files that this add-on used to ship and no longer does.
+	 *
+	 * XenForo's extractor never deletes - ExtractorService::copyFiles() uses the changeset only
+	 * as a skip filter - so a file dropped by a new version stays on the user's server for good.
+	 * That matters here because 2.0.0 renamed the CLI command classes, and XF\Cli\Runner
+	 * discovers commands by scanning Cli/Command rather than from a manifest. An install
+	 * upgraded from 1.x therefore still registers that version's `hg:archive-users` and
+	 * `hg:restore-users` alongside the current `archive:` commands - verified by installing
+	 * the 1.1.1 release on a disposable instance and upgrading onto it.
+	 *
+	 * Guarded on the XenForo version because the declared floor is 2.2, where neither
+	 * AbstractSetup::enqueuePostUpgradeCleanUp() nor XF\Job\FileCleanUp exists. An unguarded
+	 * call is a fatal during the upgrade, not a no-op.
+	 */
+	public function postUpgrade($previousVersion, array &$stateChanges)
+	{
+		if (\XF::$versionId >= 2030000) // XF 2.3+
+		{
+			$this->enqueuePostUpgradeCleanUp();
+		}
+	}
+
 	public function uninstall(array $stepParams = [])
 	{
         $this->schemaManager()->dropTable('xf_archivesite_user');
