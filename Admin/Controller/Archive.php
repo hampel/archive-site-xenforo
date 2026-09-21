@@ -3,7 +3,6 @@
 namespace Hampel\ArchiveSite\Admin\Controller;
 
 use XF\Admin\Controller\AbstractController;
-use XF\Entity\User;
 use XF\Mvc\FormAction;
 use XF\Mvc\ParameterBag;
 
@@ -85,13 +84,9 @@ class Archive extends AbstractController
 		$perPage = 20;
 
 		$finder = $this->getArchiveRepo()->activeUsers();
-		$finder->limitByPage($page, $perPage, 5);
+		$finder->limitByPage($page, $perPage);
 		$total = $finder->total();
-		$users = $finder->fetch()->filter(function(User $user) {
-			return !$user->is_super_admin;
-		});
-
-		$users = $users->slice(0, $perPage);
+		$users = $finder->fetch();
 
 		$viewParams = compact('users', 'total', 'page', 'perPage');
 		return $this->view('Hampel\ArchiveSite:Tools\ActiveUsers', 'hampel_archivesite_active_users', $viewParams);
@@ -111,10 +106,7 @@ class Archive extends AbstractController
         $partiallyArchived = $finder->total();
 
 		$finder = $this->getArchiveRepo()->activeUsers();
-		$activeUsers = $finder->fetch()->filter(function(User $user) {
-			return !$user->is_super_admin;
-		});
-		$active = $activeUsers->count();
+		$active = $finder->total();
 
 		$viewParams = compact('protected', 'active', 'archived', 'partiallyArchived');
 		return $this->view('Hampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
@@ -133,11 +125,8 @@ class Archive extends AbstractController
 			return $this->error(\XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'));
 		}
 
-		$finder = $this->getArchiveRepo()->protectedUsers();
-		$protectedUsers = $finder->pluckFrom('user_id')->fetch();
-
 		$this->app->jobManager()->enqueueUnique('archiveUsers', 'Hampel\ArchiveSite:ArchiveUsers', [
-			'protectedUsers' => $protectedUsers->toArray()
+			'protectedUsers' => $this->getArchiveRepo()->protectedUserIds()
 		]);
 
 		$reply = $this->redirect(

@@ -20,6 +20,22 @@ class ArchiveUsers extends Repository
 	}
 
 	/**
+	 * IDs of every user the archive process must leave alone - each super admin, plus anything
+	 * listed in $config['archiveSiteProtectedUsers'].
+	 *
+	 * The finders below exclude this list rather than testing Admin.is_super_admin themselves:
+	 * the Admin relation is a left join, so a non-admin has NULL there and a comparison against
+	 * it would exclude every ordinary user instead of the admins. Excluding by ID also keeps one
+	 * definition of "protected" for the finders, the archive job and archiveUser()/restoreUser().
+	 *
+	 * @return array
+	 */
+	public function protectedUserIds()
+	{
+		return array_values($this->protectedUsers()->pluckFrom('user_id')->fetch()->toArray());
+	}
+
+	/**
 	 * @return \XF\Mvc\Entity\Finder
 	 */
 	public function partiallyArchivedUsers()
@@ -27,7 +43,7 @@ class ArchiveUsers extends Repository
 		return $this->finder('XF:User')
             ->with('Auth', true)
             ->with('ArchivedUser', false)
-            ->where('user_id', '!=', ProtectedUsers::get())
+            ->where('user_id', '!=', $this->protectedUserIds())
             ->where('Auth.scheme_class', '=', 'XF:NoPassword')
             ->where('ArchivedUser.previous_state', '=', null);
 	}
@@ -39,7 +55,7 @@ class ArchiveUsers extends Repository
     {
         return $this->finder('XF:User')
             ->with(['Auth', 'ArchivedUser'], true)
-            ->where('user_id', '!=', ProtectedUsers::get())
+            ->where('user_id', '!=', $this->protectedUserIds())
             ->where('Auth.scheme_class', '=', 'XF:NoPassword')
             ->where('ArchivedUser.previous_state', '!=', null);
     }
@@ -52,7 +68,7 @@ class ArchiveUsers extends Repository
 		return $this->finder('XF:User')
             ->with('Auth', true)
             ->with('ArchivedUser', false)
-            ->where('user_id', '!=', ProtectedUsers::get())
+            ->where('user_id', '!=', $this->protectedUserIds())
             ->where('Auth.scheme_class', '!=', 'XF:NoPassword')
             ->where('ArchivedUser.previous_state', '=', null);
 	}

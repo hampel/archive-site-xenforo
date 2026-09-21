@@ -13,12 +13,7 @@ class ArchiveUsers extends AbstractRebuildJob
     {
         if (empty($data['protectedUsers']))
         {
-            $data['protectedUsers'] = $this
-                ->getArchiveRepo()
-                ->protectedUsers()
-                ->pluckFrom('user_id')
-                ->fetch()
-                ->toArray();
+            $data['protectedUsers'] = $this->getArchiveRepo()->protectedUserIds();
         }
 
         return parent::setupData($data);

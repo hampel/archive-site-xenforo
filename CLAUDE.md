@@ -63,6 +63,13 @@ Two consequences worth holding on to:
   and `restoreUser()`, below the job's own filtering. Keep that second check when editing either —
   the CLI single-user commands rely on it, not on the job's ID query.
 
+**`protectedUserIds()` is the single definition everything else excludes by.** The three other
+finders, the archive job's setup data and the ACP's job enqueue all call it, so "protected" cannot
+drift between them. It resolves super admins through the `protectedUsers()` finder rather than
+testing `Admin.is_super_admin` in each query, and that is not a style choice: the `Admin` relation
+is a left join, so an ordinary user has `NULL` there, `NULL <> 1` evaluates to `NULL`, and a
+condition that looks like it excludes admins excludes **everyone else** instead.
+
 ## Archiving and restoring are not inverses
 
 `archiveUser()` clears the user's remember-me records, sets their auth to `XF:NoPassword`, records
@@ -78,7 +85,7 @@ each:
 | finder | the user has | means |
 |---|---|---|
 | `protectedUsers()` | super admin, or an ID in `config.php` | never touched by a run |
-| `activeUsers()` | a real password, no archive row | not yet archived |
+| `activeUsers()` | a real password, no archive row, not protected | not yet archived |
 | `archivedUsers()` | `XF:NoPassword` and an archive row | archived by this add-on, restorable |
 | `partiallyArchivedUsers()` | `XF:NoPassword`, no archive row | password removed some other way |
 
