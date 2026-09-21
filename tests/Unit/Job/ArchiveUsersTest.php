@@ -4,46 +4,20 @@ namespace Tests\Unit\Job;
 
 use Hampel\Testing\Concerns\UsesDatabaseTransactions;
 use Tests\TestCase;
-use XF\Job\JobResult;
 
 /**
  * The jobs are the archive run itself: every account on the forum, in batches, from the ACP button
  * or the CLI. So these run them for real against the forum's accounts - inside a transaction that
  * is rolled back, which is the only thing standing between this test and archiving the forum.
+ *
+ * runJobToCompletion() builds a fresh job each pass from the previous pass's data, as XenForo's
+ * job manager does, and deliberately leaves the entity cache alone between jobs - as the queue
+ * runner does in one request. That second point is what caught archiveUser() leaving a stale
+ * relation behind, so do not add a clearEntityCache() here.
  */
 class ArchiveUsersTest extends TestCase
 {
 	use UsesDatabaseTransactions;
-
-	/**
-	 * Drive a job the way XF\Job\Manager does, which differs from calling run() in a loop in two
-	 * ways that matter. The manager persists each pass's result data, serialised, and builds a
-	 * fresh job from it for the next pass - so a job that kept its position only on the instance
-	 * would restart every run. And JobResult's `completed` is true for a failed job as well as a
-	 * finished one, so the result code is what gets checked.
-	 *
-	 * Replace with the framework's runJobToCompletion() once 5.3.0 is released.
-	 */
-	protected function runJob(string $class, array $data = []): void
-	{
-		// The entity cache is deliberately NOT cleared between jobs. XF\Job\Manager::runQueue() runs
-		// every due job in one request through one entity manager, so an archive job and a restore
-		// job can share it in production - and a test that cleared it would pass where a forum fails.
-
-		$passes = 0;
-		do
-		{
-			$result = $this->app()->job($class, null, $data)->run(30);
-			$data = unserialize(serialize($result->data));
-		}
-		while ($result->result === JobResult::RESULT_RESUME && ++$passes < 1000);
-
-		$this->assertSame(
-			JobResult::RESULT_COMPLETED,
-			$result->result,
-			"$class did not complete - result code {$result->result} after " . ($passes + 1) . ' passes'
-		);
-	}
 
 	protected function repo()
 	{
@@ -114,7 +88,7 @@ class ArchiveUsersTest extends TestCase
 		$protected = $this->protectedIdsOrSkip();
 		$before = $this->accounts();
 
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
 
 		$after = $this->accounts();
 		foreach ($before AS $id => $account)
@@ -139,7 +113,7 @@ class ArchiveUsersTest extends TestCase
 		$protected = $this->protectedIdsOrSkip();
 		$before = $this->accounts();
 
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers');
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers');
 
 		$after = $this->accounts();
 		foreach ($protected AS $id)
@@ -159,7 +133,7 @@ class ArchiveUsersTest extends TestCase
 		$this->setConfig('archiveSiteProtectedUsers', [$user->user_id]);
 		$before = $this->accounts();
 
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $this->repo()->protectedUserIds()]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $this->repo()->protectedUserIds()]);
 
 		$this->assertUntouched($before[$user->user_id], $this->accounts()[$user->user_id], 'config-protected user was changed');
 	}
@@ -173,7 +147,7 @@ class ArchiveUsersTest extends TestCase
 		$protected = $this->protectedIdsOrSkip();
 		$before = $this->accounts();
 
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected, 'batch' => 1]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected, 'batch' => 1]);
 
 		$after = $this->accounts();
 		foreach (array_diff(array_keys($before), $protected) AS $id)
@@ -186,9 +160,9 @@ class ArchiveUsersTest extends TestCase
 	{
 		$protected = $this->protectedIdsOrSkip();
 		$before = $this->accounts();
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
 
-		$this->runJob('Hampel\ArchiveSite:RestoreUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:RestoreUsers', ['protectedUsers' => $protected]);
 
 		$after = $this->accounts();
 		foreach (array_diff(array_keys($before), $protected) AS $id)
@@ -215,7 +189,7 @@ class ArchiveUsersTest extends TestCase
 		$noAuth = $this->anAccountWithNoAuthRecord();
 		$before = $this->accounts();
 
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
 
 		$after = $this->accounts();
 		$this->assertArchived($after[$noAuth], 'the account with no auth record was not archived');
@@ -230,9 +204,9 @@ class ArchiveUsersTest extends TestCase
 		$protected = $this->protectedIdsOrSkip();
 		$noAuth = $this->anAccountWithNoAuthRecord();
 		$stateBefore = $this->accounts()[$noAuth]['user_state'];
-		$this->runJob('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
 
-		$this->runJob('Hampel\ArchiveSite:RestoreUsers', ['protectedUsers' => $protected]);
+		$this->runJobToCompletion('Hampel\ArchiveSite:RestoreUsers', ['protectedUsers' => $protected]);
 
 		$after = $this->accounts()[$noAuth];
 		$this->assertSame($stateBefore, $after['user_state']);

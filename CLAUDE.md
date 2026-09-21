@@ -47,12 +47,13 @@ Built on `hampel/xenforo-test-framework` v5, isolated to this add-on through `$a
 nothing Composer installs can reach a release, and `config.platform.php` sits at 8.3 for the test
 framework's sake without that raising anything this add-on ships.
 
-**Requires the framework at `^5.2`.** 5.0.0 fixed isolation dropping class extensions registered
+**Requires the framework at `^5.3`.** 5.0.0 fixed isolation dropping class extensions registered
 on a class name XenForo 2.3 renamed — and `Login`, `PasswordReset` and `Finder\User` are exactly the
 renamed names this add-on's 2.2 floor requires, so on an older framework their tests exercise core
 instead. 5.1.0 added `callAction()`, which is what lets the archive button's `POST` be tested at
 all: it skips the CSRF check, and `preDispatch()` with it, so the super-admin guard on that action
-is proved separately with `dispatch()`.
+is proved separately with `dispatch()`. 5.3.0 added `runJobToCompletion()`, which the job tests
+use to run the archive and restore jobs as XenForo's job manager would.
 
 The suite runs against a real forum's database, which is what makes it worth having and what makes
 three rules non-negotiable:

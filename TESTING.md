@@ -114,9 +114,10 @@ What it covers, by class:
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The suite needs the test framework at 5.2 or later** — `composer.json` requires `^5.2`. Older
-releases drop the `Login`, `PasswordReset` and `Finder\User` extensions under isolation, so their
-tests would silently exercise core, and have no `callAction()` for the archive button.
+**The suite needs the test framework at 5.3 or later** — `composer.json` requires `^5.3`. Before
+5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their tests
+would silently exercise core; `callAction()` for the archive button arrived in 5.1, and
+`runJobToCompletion()` for the jobs in 5.3.
 
 The remaining checks are the ones a unit suite cannot reach:
 
