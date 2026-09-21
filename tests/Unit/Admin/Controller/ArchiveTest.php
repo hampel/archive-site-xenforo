@@ -95,6 +95,24 @@ class ArchiveTest extends TestCase
 	}
 
 	/**
+	 * The regression. The confirmation used to be enforced only when the request carried the submit
+	 * button's own name, so a POST without it - no fields at all - queued the archive-everyone job.
+	 * The box is the confirmation, whatever else the request holds.
+	 */
+	public function test_the_archive_button_is_refused_whenever_the_box_is_not_ticked(): void
+	{
+		foreach (['no fields at all' => [], 'the button alone' => ['confirm_archive' => '1']] AS $what => $input)
+		{
+			$this->fakesJobs();
+
+			$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', $input);
+
+			$this->assertReplyIsError($reply, null, null, "$what was not refused");
+			$this->assertNoJobsQueued();
+		}
+	}
+
+	/**
 	 * Confirmed, it queues the archive job - once, under a fixed key so a double submit cannot run
 	 * two - carrying the protected list worked out now, and sends the admin to watch it run.
 	 */

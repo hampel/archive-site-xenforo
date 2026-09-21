@@ -120,7 +120,9 @@ class Archive extends AbstractController
 
 		$actions = $this->filter('actions', 'array');
 
-		if ($this->request->exists('confirm_archive') && empty($actions['archive']))
+		// the ticked box is the confirmation, whatever else the request carries - checking it only
+		// when the submit button's name was sent let a POST without it archive the whole forum
+		if (empty($actions['archive']))
 		{
 			return $this->error(\XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'));
 		}
