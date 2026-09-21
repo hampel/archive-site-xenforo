@@ -35,8 +35,15 @@ class Login extends XFCP_Login
 		$auth = $user->Auth;
 		if (!$auth || !$auth->authenticate($password))
 		{
-			// custom error message for people not in our allowed logins list
-			if (!ProtectedUsers::isProtected($user->user_id) && !$user->getIsSuperAdmin())
+			// Only an account that has actually been archived is told the site is archived. It has no
+			// password, so there is nothing to guess and no attempt to count. Anyone who still has a
+			// password takes core's path below, so their failures are recorded and XenForo's
+			// brute-force limit applies to them.
+			if ($auth
+				&& $auth->scheme_class == 'XF:NoPassword'
+				&& !ProtectedUsers::isProtected($user->user_id)
+				&& !$user->getIsSuperAdmin()
+			)
 			{
 				$error = \XF::phrase('hampel_archivesite_login_denied', ['boardTitle' => $this->app->options()->boardTitle]);
 				return null;

@@ -106,7 +106,7 @@ What it covers, by class:
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
-| `XF\Service\User\LoginTest` | an archived user is told the site is archived; a protected user gets core's failure, recorded; the core behaviour copied around it still holds |
+| `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
 

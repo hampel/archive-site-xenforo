@@ -70,6 +70,28 @@ class LoginTest extends TestCase
 		$this->assertSame('hampel_archivesite_login_denied', $error->getName());
 	}
 
+	/**
+	 * The regression. An ordinary member who still has a password - before the archive has run, or
+	 * on a forum using this add-on only to hide things from guests - used to be told the site was
+	 * archived, and the attempt was never recorded, so XenForo's brute-force limit never engaged
+	 * for them. Their failures now take core's path.
+	 */
+	public function test_a_member_who_still_has_a_password_gets_the_ordinary_failure_and_it_is_recorded(): void
+	{
+		$user = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->activeUsers()->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+		$before = $this->attempts($user->username);
+
+		$result = $this->validate($user->username, 'not-the-password-' . mt_rand(), $error);
+
+		$this->assertNull($result);
+		$this->assertSame('incorrect_password', $error->getName());
+		$this->assertSame($before + 1, $this->attempts($user->username));
+	}
+
 	public function test_a_protected_user_gets_the_ordinary_failure_and_it_is_recorded(): void
 	{
 		$admin = $this->aSuperAdmin();
@@ -80,6 +102,28 @@ class LoginTest extends TestCase
 		$this->assertNull($result);
 		$this->assertSame('incorrect_password', $error->getName());
 		$this->assertSame($before + 1, $this->attempts($admin->username));
+	}
+
+	/**
+	 * A protected account is never archived by this add-on, so having no password does not make it
+	 * archived - an admin who signs in only through a connected account, for instance. It must not
+	 * be told the site is archived.
+	 */
+	public function test_a_protected_account_without_a_password_is_not_told_the_site_is_archived(): void
+	{
+		$user = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->activeUsers()->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+		$this->setConfig('archiveSiteProtectedUsers', [$user->user_id]);
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+		$this->app()->em()->clearEntityCache();
+
+		$this->assertNull($this->validate($user->username, 'anything', $error));
+
+		$this->assertSame('incorrect_password', $error->getName());
 	}
 
 	/**

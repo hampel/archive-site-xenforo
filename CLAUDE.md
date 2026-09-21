@@ -181,6 +181,13 @@ list, and an archived forum's statistics collapse overnight. The override widens
   through it, because the custom "this site is archived" error has to replace the authentication
   failure rather than follow it. Re-read the core method after any XF upgrade and port whatever
   changed.
+
+  **The "archived" message is only for an account that really is archived** — auth `XF:NoPassword`,
+  and neither protected nor a super admin. Every other failure takes core's path, which records the
+  attempt. That is a security property, not a wording choice: until 2.0.2 the message went to any
+  unprotected member, returned before `recordFailedAttempt()`, and so switched XenForo's
+  brute-force limit off for every ordinary member who still had a password. An archived account
+  has no password to guess, which is the only reason its failure can skip the count.
 - **`XF\Mail\Mail`** declares the class twice in one file, inside an `if (\XF::$versionId >=
   2030000)` branch, because `setToUser()` gained a `: \XF\Mail\Mail` return type in XF 2.3 and an
   incompatible signature is a fatal, not a warning. Any further change to that method has to be
