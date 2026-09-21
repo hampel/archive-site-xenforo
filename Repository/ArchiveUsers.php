@@ -87,24 +87,9 @@ class ArchiveUsers extends Repository
         $user->user_state = 'disabled';
         $user->save();
 
-        /*
-         * TODO:
-         *
-         * - CONSIDER STILL SHOWING MEMBERS WHO HAVE BEEN ARCHIVED
-         *
-         * - delete banned users with zero posts
-         * - delete conversations started by archived users
-         * - remove DoB
-         * - remove location
-         * - physically remove deleted posts by deleted users
-         * - physically remove deleted photos by deleted users
-         * - physically remove deleted photos?
-         * - physically remove deleted posts and attachments?
-         * - remove bookmarks for archived users
-         * - remove profile posts for archived users
-         * - physically remove deleted threads
-         * - clean up user profiles of archived users?
-         */
+        // archiving disables the account and removes the password. It deliberately leaves all
+        // content, profile fields and personal details intact, so that restoreUser() can put
+        // the account back: this is not a data-erasure mechanism.
 
         return true;
 	}

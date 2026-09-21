@@ -86,6 +86,33 @@ each:
 before this add-on existed, or by some other route. They cannot be restored, because nothing
 recorded what their `user_state` used to be.
 
+## Archiving disables, it does not erase
+
+**An archived account keeps everything it had.** `archiveUser()` clears remember-me records, sets
+the auth to `XF:NoPassword`, records the previous `user_state` and sets the state to `disabled`.
+Posts, conversations, attachments, date of birth, location and profile fields are all untouched,
+and that is deliberate — the add-on exists to stop a forum being *used*, not to scrub it.
+
+Worth stating plainly because the name invites the other reading: **this is not a data-erasure
+tool**, and an administrator reaching for it to satisfy a deletion request will not get one.
+
+A longer list of scrubbing and tidying steps was considered when the 2.0 archiving mechanism was
+written, and none of it was implemented. It is recorded here rather than lost, since each one is a
+decision someone may want to revisit:
+
+- show archived members in the member list again, rather than hiding them as disabled accounts
+- delete banned users with no posts
+- delete conversations started by archived users
+- remove date of birth, and location
+- remove bookmarks and profile posts belonging to archived users
+- clean up archived users' profiles more generally
+- physically remove soft-deleted threads, posts, attachments and photos
+
+**Anything on that list that deletes content needs more thought than it looks.** Restoring a user
+puts their `user_state` back from `xf_archivesite_user`, so archiving is reversible by design;
+deleting their content would quietly make it one-way, and nothing in the restore path would say
+so.
+
 ## Installing this add-on stops mail to ordinary users
 
 `XF\Mail\Mail::setToUser()` is extended to refuse any recipient who is not a super admin and not
