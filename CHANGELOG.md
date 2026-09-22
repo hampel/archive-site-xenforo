@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+2.0.2 (2026-09-22)
+------------------
+
+* security - a failed login by a member who still has a password now counts towards XenForo's
+  brute-force limit, and they are told the password is incorrect; previously they were told the
+  site was archived and the attempt was not counted. Only an archived account is now told the site
+  is archived
+* now requires XenForo 2.2.0 or higher
+* bug fix - two template modifications had stopped applying on XenForo 2.3, which let guests see
+  the What's New link and the gallery BB code control; both are hidden from guests again
+* bug fix - archiving all users no longer stops part-way on an account that has no authentication
+  record, and such accounts are now included in the active and archived user counts
+* bug fix - restoring users in the same background job run as archiving them no longer skips them
+* bug fix - the Archive Users action now always requires its confirmation box to be ticked
+* bug fix - the active user count no longer includes super administrators
+* bug fix - removed a "Clean Users" admin menu item that led nowhere
+* upgrading now removes files that earlier versions left behind, including two command classes
+  from 1.x that were still registered as `hg:archive-users` and `hg:restore-users`
+
 2.0.1 (2024-07-12)
 ------------------
 
