@@ -110,14 +110,16 @@ What it covers, by class:
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
+| `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
 
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The suite needs the test framework at 5.3 or later** — `composer.json` requires `^5.3`. Before
+**The suite needs the test framework at 5.4 or later** — `composer.json` requires `^5.4`. Before
 5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their tests
-would silently exercise core; `callAction()` for the archive button arrived in 5.1, and
-`runJobToCompletion()` for the jobs in 5.3.
+would silently exercise core; `callAction()` for the archive button arrived in 5.1,
+`runJobToCompletion()` for the jobs in 5.3, and a rendered template's `$xf` in 5.4. Every rendering
+test fails on 5.3, because without `$xf` the modifications cannot read the visitor or the options.
 
 The remaining checks are the ones a unit suite cannot reach:
 
@@ -178,12 +180,10 @@ evidence rather than assumption. Both are worth re-running whenever the floor mo
 
 ## Needs a human
 
-- **That a logged-in member still sees everything guests do not.** The suite confirms the
-  modifications apply and the members-online widget still renders for a member, but not what a
-  member actually sees on each page.
-- **The options render as intended.** That the home page message appears on the forum home; that
-  the content end message appears below both the thread list and the thread content; that setting
-  a URL makes it a link; that the new-window option opens it in one.
+- **That a logged-in member still sees the rest of what guests do not.** The suite renders the
+  latest-member widget, the not-open notice and the birthday for both, but not followers and
+  following on a profile, the lock icon in a thread list, the forum home's page actions, or the
+  What's New link for a member - the guest half of that one is the curl check above.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
   at all without it, so an install lacking XFMG proves nothing either way.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms
