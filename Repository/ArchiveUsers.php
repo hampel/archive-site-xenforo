@@ -21,7 +21,7 @@ class ArchiveUsers extends Repository
 
 	/**
 	 * IDs of every user the archive process must leave alone - each super admin, plus anything
-	 * listed in $config['archiveSiteProtectedUsers'].
+	 * listed in $config['archiveSite']['protectedUsers'].
 	 *
 	 * The finders below exclude this list rather than testing Admin.is_super_admin themselves:
 	 * the Admin relation is a left join, so a non-admin has NULL there and a comparison against

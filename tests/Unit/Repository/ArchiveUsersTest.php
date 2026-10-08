@@ -86,6 +86,19 @@ class ArchiveUsersTest extends TestCase
 	public function test_a_config_listed_user_is_protected(): void
 	{
 		$user = $this->anActiveUser();
+		$this->setConfig('archiveSite', ['protectedUsers' => [$user->user_id]]);
+
+		$this->assertContains($user->user_id, $this->repo()->protectedUserIds());
+	}
+
+	/**
+	 * The deprecated flat key has to reach the finders too, not only Config\ProtectedUsers, since
+	 * an install upgrading from 2.0.2 or earlier keeps using it. The test above covers the current
+	 * key through the same method, so the pair is deliberate rather than duplication.
+	 */
+	public function test_a_user_listed_under_the_deprecated_flat_key_is_protected(): void
+	{
+		$user = $this->anActiveUser();
 		$this->setConfig('archiveSiteProtectedUsers', [$user->user_id]);
 
 		$this->assertContains($user->user_id, $this->repo()->protectedUserIds());

@@ -14,6 +14,10 @@ use XF\Mail\Mail;
  * setToUser() refuses by setting Mail::$setupError rather than throwing, and send() then logs that
  * error to the forum's real error log. So these read the property instead of sending: it is
  * exactly what the extension changes, and it touches nothing outside the object.
+ *
+ * $config['archiveSite']['allowMail'] switches the whole restriction off, for a development copy
+ * of an archived forum. Nothing else does, so the tests for it assert both directions: the same
+ * member who is refused by default is accepted with the flag set.
  */
 class MailTest extends TestCase
 {
@@ -84,6 +88,43 @@ class MailTest extends TestCase
 	{
 		$user = $this->anActiveUser();
 		$this->setConfig('archiveSiteProtectedUsers', [$user->user_id]);
+
+		$mail = $this->app()->mailer()->newMail()->setToUser($user);
+
+		$this->assertNull($this->setupError($mail));
+	}
+
+	public function test_mail_to_an_ordinary_member_is_allowed_when_the_config_flag_is_set(): void
+	{
+		$user = $this->anActiveUser();
+
+		$refused = $this->app()->mailer()->newMail()->setToUser($user);
+		$this->assertNotNull($this->setupError($refused), 'the member was mailable before the flag was set');
+
+		$this->setConfig('archiveSite', ['allowMail' => true]);
+		$allowed = $this->app()->mailer()->newMail()->setToUser($user);
+
+		$this->assertNull($this->setupError($allowed));
+	}
+
+	public function test_mail_to_an_ordinary_member_is_still_refused_when_the_flag_is_false(): void
+	{
+		$user = $this->anActiveUser();
+		$this->setConfig('archiveSite', ['allowMail' => false]);
+
+		$mail = $this->app()->mailer()->newMail()->setToUser($user);
+
+		$this->assertNotNull($this->setupError($mail));
+	}
+
+	/**
+	 * The flag and the protected list share one settings array, so setting either must not disturb
+	 * the other - a mistake the flat key could not make.
+	 */
+	public function test_the_nested_protected_list_is_honoured_alongside_the_flag(): void
+	{
+		$user = $this->anActiveUser();
+		$this->setConfig('archiveSite', ['protectedUsers' => [$user->user_id], 'allowMail' => false]);
 
 		$mail = $this->app()->mailer()->newMail()->setToUser($user);
 

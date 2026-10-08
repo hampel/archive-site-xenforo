@@ -87,10 +87,19 @@ change to one almost never touches the other:
 
 ## Protected users come from `config.php`, not from an option
 
-`Config\ProtectedUsers::get()` reads `$config['archiveSiteProtectedUsers']` out of the install's
+`Config\ProtectedUsers::get()` reads `$config['archiveSite']['protectedUsers']` out of the install's
 `src/config.php`, and that array plus every super admin is the entire set of accounts an archive
 run will leave alone. It is deliberately not an ACP option: an option lives in a database an
 archive run is rewriting, and a config file does not.
+
+**Every setting lives under the one `archiveSite` key, read through `Config\Settings::get()`.** The
+flat `$config['archiveSiteProtectedUsers']` that 2.0.2 and earlier read is deprecated and still
+honoured, so an upgrading install needs no change to `config.php` — `ProtectedUsers` falls back to
+it only when the nested key is absent, and a nested key set to an empty array therefore *overrides*
+rather than falls through. That asymmetry is deliberate: an empty list is what the CLI commands
+abort on, and falling back would hide a deliberate one. `Settings::get()` also has to survive a
+hand-written `config.php` holding anything at all under that key, so it checks `is_array()` before
+reading.
 
 Two consequences worth holding on to:
 
@@ -182,6 +191,13 @@ foot-gun anywhere else.
 
 The refusal sets `$this->setupError` rather than throwing, so the caller sees the send fail the
 way XF's own validation failures do instead of a fatal.
+
+**`$config['archiveSite']['allowMail']` switches the restriction off entirely**, for a development
+or staging copy of an archived forum that still has to send mail. It is config rather than an
+option for the same reason the protected list is, and more so: re-enabling mail to every member of
+an archived forum is not something that should be a checkbox. `Config\AllowMail::enabled()` is
+checked first in both version branches of the extension, so a truthy flag means the method is
+stock XF.
 
 ## `Finder\User::isValidUser()` is overridden so statistics stay honest
 

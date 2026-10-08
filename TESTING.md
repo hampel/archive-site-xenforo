@@ -11,7 +11,7 @@ The PHPUnit suite settles most of the last; *Automated* says what it covers and 
 |---|---|
 | `XF\Entity\User` | adds the `ArchivedUser` relation; nothing else |
 | `XF\Finder\User` | rewrites `isValidUser()` so archived users still count as valid, keeping member counts and statistics honest |
-| `XF\Mail\Mail` | `setToUser()` refuses any recipient who is not a super admin or protected, by setting `setupError` rather than throwing |
+| `XF\Mail\Mail` | `setToUser()` refuses any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set |
 | `XF\Service\User\Login` | **replaces** `validate()` outright, so a non-protected user gets an "archived" message instead of "incorrect password" |
 | `XF\Service\User\PasswordReset` | extends `canTriggerConfirmation()` to refuse users whose auth is `XF:NoPassword` |
 | `XF\Widget\MembersOnline` | `render()` returns empty for guests |
@@ -56,11 +56,17 @@ and the modification simply never applies, which is correct rather than a failur
 
 ## Fragile points
 
-**The protected user list comes from `config.php`, not from an option.**
-`$config['archiveSiteProtectedUsers']`, plus every super admin, is the entire set of accounts an
-archive run leaves alone. Both `archive-all-users` and `restore-all-users` abort when that list
-resolves empty, and that guard is the only thing between a run and a forum nobody can log in to.
-Anything that changes how the list is read deserves a deliberate test of the empty case.
+**The settings come from `config.php`, not from options.** `$config['archiveSite']` holds
+`protectedUsers` and `allowMail`; the flat `$config['archiveSiteProtectedUsers']` of 2.0.2 and
+earlier is deprecated, still honoured, and overridden by the nested key wherever both are set. A
+hand-written `config.php` can hold anything under that key, so anything reading it has to tolerate
+a scalar or a string where an array was meant.
+
+**The protected user list is the dangerous one.** That array, plus every super admin, is the
+entire set of accounts an archive run leaves alone. Both `archive-all-users` and
+`restore-all-users` abort when that list resolves empty, and that guard is the only thing between
+a run and a forum nobody can log in to. Anything that changes how the list is read deserves a
+deliberate test of the empty case.
 
 **Template modifications match stock markup, so a XenForo upgrade breaks them silently.** Twelve
 use an exact `str_replace` against text copied from core templates, tabs included. When a core
@@ -100,12 +106,13 @@ What it covers, by class:
 
 | test | settles |
 |---|---|
-| `Config\ProtectedUsersTest` | the config list is read correctly, including a scalar and an empty value |
+| `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
+| `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row; archiving and restoring change exactly what they should, and refuse protected users and super admins |
 | `Admin\Controller\ArchiveTest` | each page's totals agree with its rows and with the finders; the archive button refuses without its confirmation, refuses a `GET`, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
 | `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
-| `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not |
+| `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not; `allowMail` lets the same member through, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
