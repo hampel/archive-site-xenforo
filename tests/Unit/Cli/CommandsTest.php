@@ -17,9 +17,13 @@ use Tests\TestCase;
  * development forum, so most of these refuse before the confirmation or decline it, and the two
  * that answer it name a single account inside the transaction.
  *
- * **The confirmed path of the bulk commands is deliberately not tested.** A rebuild command runs
- * its job then and there rather than queueing it, so a confirmed archive-all would archive every
- * account on the forum the suite is pointed at. That belongs in a sandbox.
+ * **The confirmed path of the bulk commands is deliberately not tested.** They extend
+ * XF\Cli\Command\Rebuild\AbstractRebuildCommand, which runs the job in the command's own process
+ * through JobRunnerTrait::runJob() - a `while ($runner = $jobManager->runUnique(...))` loop that
+ * runs it to completion rather than queueing it. So a confirmed archive-all archives every account
+ * on the forum this suite is pointed at, and the surrounding transaction is no guard either: the
+ * job manager ends the transaction on its own error paths, after which what follows is permanent.
+ * That path belongs on a sandbox.
  *
  * Declining is what `['interactive' => false]` buys: the confirmation is a Symfony question with
  * no default, which a non-interactive run answers with null, and every command treats anything
