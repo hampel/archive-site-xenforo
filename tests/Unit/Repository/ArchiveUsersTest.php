@@ -314,6 +314,38 @@ class ArchiveUsersTest extends TestCase
 		$this->assertDatabaseMissing('xf_archivesite_user', ['user_id' => $user->user_id]);
 	}
 
+	/**
+	 * The account awaiting approval, archived and restored in one request - which is what
+	 * XF\Job\Manager::runQueue() does when both jobs are due, since it runs them through one
+	 * entity manager.
+	 *
+	 * Archiving takes the state out of 'moderated', so core deletes the approval queue entry;
+	 * restoring puts it back, so core builds a new one with getRelationOrDefault(). That hands
+	 * back the deleted entity, because its guard is empty() and an object is never empty, and
+	 * writing to it throws. Nothing on the forum needs to be odd for this to happen - only an
+	 * account waiting to be approved, of which this forum has a hundred.
+	 */
+	public function test_a_moderated_account_survives_being_archived_and_restored_in_one_request(): void
+	{
+		$user = $this->anActiveUser();
+
+		// core creates the approval queue entry on the way in, which is the fixture
+		$user->user_state = 'moderated';
+		$user->save();
+		$this->assertNotNull($user->ApprovalQueue, 'core did not create the approval queue entry');
+
+		$this->repo()->archiveUser($user);
+		$this->repo()->restoreUser($user);
+
+		$this->assertSame('moderated', $user->user_state);
+		$this->assertNotNull($user->ApprovalQueue);
+		$this->assertFalse($user->ApprovalQueue->isDeleted(), 'the restored account kept a deleted queue entry');
+
+		$reloaded = $this->reload($user->user_id);
+		$this->assertSame('moderated', $reloaded->user_state);
+		$this->assertNotNull($reloaded->ApprovalQueue, 'the approval queue entry was not put back');
+	}
+
 	public function test_restoring_refuses_a_super_admin(): void
 	{
 		$admin = $this->aSuperAdmin();

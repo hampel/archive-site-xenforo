@@ -148,7 +148,22 @@ class ArchiveUsers extends Repository
 
         if ($user->ArchivedUser)
         {
-            $user->user_state = $user->ArchivedUser->previous_state;
+            $previousState = $user->ArchivedUser->previous_state;
+
+            // An account awaiting approval has a row in the approval queue, and XF\Entity\User
+            // deletes it when the state leaves 'moderated' - which archiving does - then builds a
+            // new one when it returns. It builds that one with getRelationOrDefault(), whose guard
+            // is empty($this->_relations[$key]): an object is never empty, so the entity deleted a
+            // moment ago is handed back still hydrated on the relation, and writing to it throws
+            // "Attempted to set 'content_type' on a deleted entity". Dropping it lets core fetch
+            // or build a live one. Only the moderated case reaches any of this, so nothing else
+            // pays for the relation being read.
+            if ($previousState == 'moderated' && $user->ApprovalQueue && $user->ApprovalQueue->isDeleted())
+            {
+                $user->hydrateRelation('ApprovalQueue', null);
+            }
+
+            $user->user_state = $previousState;
             $user->save();
 
             $user->ArchivedUser->delete();
