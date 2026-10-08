@@ -34,16 +34,26 @@ class ArchiveTest extends TestCase
 	 * The user-visible half of the super-admin leak. The page took its total from the finder and
 	 * its rows from a PHP filter applied afterwards, so the two disagreed by the number of super
 	 * admins - the footer counter and the pagination both read the wrong total.
+	 *
+	 * The page's total is the finder's, and its rows are one page of that total. Comparing the
+	 * total against the row count directly only held while the forum had fewer users than a page,
+	 * which is how this read until the development forum grew past twenty active accounts.
 	 */
-	public function test_the_active_users_page_total_matches_its_rows(): void
+	public function test_the_active_users_page_total_matches_the_finder(): void
 	{
 		$this->actingAsSuperAdmin();
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
 
 		$reply = $this->dispatch('archive/active-users', 'admin');
 
 		$this->assertReplyTemplate($reply, 'hampel_archivesite_active_users');
-		$users = $this->replyParam($reply, 'users');
-		$this->assertSame($this->replyParam($reply, 'total'), $users->count());
+		$total = $this->replyParam($reply, 'total');
+		$this->assertSame($repo->activeUsers()->total(), $total);
+		$this->assertSame(
+			min($total, $this->replyParam($reply, 'perPage')),
+			$this->replyParam($reply, 'users')->count(),
+			'the rows are not one page of the total'
+		);
 	}
 
 	public function test_the_active_users_page_never_lists_a_super_admin(): void
@@ -67,13 +77,15 @@ class ArchiveTest extends TestCase
 
 		$reply = $this->dispatch('archive/archive-users', 'admin');
 
-		$this->assertReplyParam($reply, 'active', $repo->activeUsers()->total());
-		$this->assertReplyParam($reply, 'protected', $repo->protectedUsers()->total());
-		$this->assertReplyParam($reply, 'archived', $repo->archivedUsers()->total());
-		$this->assertReplyParam($reply, 'partiallyArchived', $repo->partiallyArchivedUsers()->total());
+		// assertReplyParam()'s third argument is a failure message, so these asserted only that
+		// each parameter existed until the framework started refusing a value there
+		$this->assertReplyParamSame($reply, 'active', $repo->activeUsers()->total());
+		$this->assertReplyParamSame($reply, 'protected', $repo->protectedUsers()->total());
+		$this->assertReplyParamSame($reply, 'archived', $repo->archivedUsers()->total());
+		$this->assertReplyParamSame($reply, 'partiallyArchived', $repo->partiallyArchivedUsers()->total());
 	}
 
-	// ---- the archive button: a POST, so callAction() rather than dispatch() -------------------------
+	// ---- the archive button: dispatched as a POST, with its guards intact ---------------------
 
 	/**
 	 * The form's checkbox is the confirmation. Pressed without it ticked, nothing is queued.
@@ -82,9 +94,11 @@ class ArchiveTest extends TestCase
 	{
 		$this->fakesJobs();
 
-		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [
+		$this->actingAsSuperAdmin();
+
+		$reply = $this->dispatch('archive/archive-users/action', 'admin', [
 			'confirm_archive' => '1',
-		]);
+		], [], 'POST');
 
 		$this->assertReplyIsError($reply);
 		$this->assertStringContainsString(
@@ -105,7 +119,9 @@ class ArchiveTest extends TestCase
 		{
 			$this->fakesJobs();
 
-			$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', $input);
+			$this->actingAsSuperAdmin();
+
+			$reply = $this->dispatch('archive/archive-users/action', 'admin', $input, [], 'POST');
 
 			$this->assertReplyIsError($reply, null, null, "$what was not refused");
 			$this->assertNoJobsQueued();
@@ -121,10 +137,12 @@ class ArchiveTest extends TestCase
 		$this->fakesJobs();
 		$protected = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->protectedUserIds();
 
-		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [
+		$this->actingAsSuperAdmin();
+
+		$reply = $this->dispatch('archive/archive-users/action', 'admin', [
 			'confirm_archive' => '1',
 			'actions' => ['archive' => '1'],
-		]);
+		], [], 'POST');
 
 		$this->assertReplyIsRedirect($reply);
 		$this->assertStringContainsString('tools/run-job', $reply->getUrl());
@@ -136,19 +154,42 @@ class ArchiveTest extends TestCase
 		});
 	}
 
+	/**
+	 * The CSRF check, which nothing could reach while the suite had to invoke the action directly:
+	 * a fully formed, confirmed archive-everyone request is still refused when it carries no
+	 * token, and XenForo refuses it before the controller runs at all.
+	 */
+	public function test_the_archive_action_refuses_a_post_with_no_csrf_token(): void
+	{
+		$this->fakesJobs();
+		$this->actingAsSuperAdmin();
+
+		$reply = $this->dispatchWithoutCsrfToken('archive/archive-users/action', 'admin', [
+			'confirm_archive' => '1',
+			'actions' => ['archive' => '1'],
+		]);
+
+		$this->assertReplyIsError($reply, 400);
+		$this->assertNoJobsQueued();
+	}
+
 	public function test_the_archive_action_refuses_a_get(): void
 	{
 		$this->fakesJobs();
 
-		$reply = $this->callAction('Hampel\ArchiveSite:Archive', 'archive-users/action', 'admin', [], [], 'GET');
+		$this->actingAsSuperAdmin();
+
+		$reply = $this->dispatch('archive/archive-users/action', 'admin', [], [], 'GET');
 
 		$this->assertReplyIsError($reply, 405);
 		$this->assertNoJobsQueued();
 	}
 
 	/**
-	 * callAction() skips preDispatch(), so the super-admin guard on the one destructive action is
-	 * proved here with dispatch() instead.
+	 * The guard on the one destructive action, exercised through the same route as the tests above
+	 * - which is the point of dispatching them rather than invoking the action: each of those
+	 * passes the super-admin check on the way in, so this one failing would be a real difference
+	 * and not an artefact of a different entry point.
 	 */
 	public function test_an_ordinary_admin_cannot_reach_the_archive_action(): void
 	{

@@ -109,7 +109,7 @@ What it covers, by class:
 | `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row; archiving and restoring change exactly what they should, and refuse protected users and super admins |
-| `Admin\Controller\ArchiveTest` | each page's totals agree with its rows and with the finders; the archive button refuses without its confirmation, refuses a `GET`, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
+| `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
 | `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not; `allowMail` lets the same member through, and `false` does not |
@@ -117,16 +117,28 @@ What it covers, by class:
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
+| `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
 | `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
+
+**A render on a forum shared with other add-ons logs errors that are nobody's fault, so the
+rendering tests do not assert on all of them.** Template modifications are compiled into the
+install's shared template cache, while the suite's isolation deliberately loads no other add-on's
+class extensions — so a sibling whose modification reads a column its own entity extension
+declares logs a warning on every render here, while the same page is faultless in a browser.
+`TemplateRenderingTest` therefore asserts only on errors naming something this add-on inserted: an
+`$xf.options.hampelArchiveSite` option, the `ArchivedUser` relation, or one of its own templates.
+**The blanket assertion is the stronger check and wants a forum with only this add-on installed**,
+which is what a sandbox is for — worth doing when the rendering half changes materially.
 
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The suite needs the test framework at 5.4 or later** — `composer.json` requires `^5.4`. Before
-5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their tests
-would silently exercise core; `callAction()` for the archive button arrived in 5.1,
-`runJobToCompletion()` for the jobs in 5.3, and a rendered template's `$xf` in 5.4. Every rendering
-test fails on 5.3, because without `$xf` the modifications cannot read the visitor or the options.
+**The suite needs the test framework at 5.17 or later** — `composer.json` requires `^5.17`.
+Before 5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their
+tests would silently exercise core; `runJobToCompletion()` for the jobs arrived in 5.3, a rendered
+template's `$xf` in 5.4, `runConsoleCommand()` in 5.10, a CSRF token on a non-GET `dispatch()` in
+5.15, and `assertConsoleCommandsLoad()` in 5.17. Every rendering test fails on 5.3, because without
+`$xf` the modifications cannot read the visitor or the options.
 
 The remaining checks are the ones a unit suite cannot reach:
 
