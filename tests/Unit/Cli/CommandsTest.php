@@ -12,16 +12,22 @@ use Tests\TestCase;
 /**
  * The four CLI commands, which nothing exercised until the framework's runConsoleCommand().
  *
- * **Every test here takes a path that writes nothing.** The commands archive and restore real
- * accounts on whatever forum they are pointed at, and this suite runs against the development
- * forum, so each one either refuses before the confirmation or declines it. The class is
- * transactional all the same.
+ * **No test here archives anybody the transaction does not put back.** The commands archive and
+ * restore real accounts on whatever forum they are pointed at, and this suite runs against the
+ * development forum, so most of these refuse before the confirmation or decline it, and the two
+ * that answer it name a single account inside the transaction.
+ *
+ * **The confirmed path of the bulk commands is deliberately not tested.** A rebuild command runs
+ * its job then and there rather than queueing it, so a confirmed archive-all would archive every
+ * account on the forum the suite is pointed at. That belongs in a sandbox.
  *
  * Declining is what `['interactive' => false]` buys: the confirmation is a Symfony question with
  * no default, which a non-interactive run answers with null, and every command treats anything
  * but "yes" as abort. So a non-interactive run reaches the confirmation and stops there, which is
  * both the safe path and the one worth asserting - it is the only thing between a mistyped
- * command and an archived forum.
+ * command and an archived forum. `['inputs' => ['yes']]` answers it instead, for the two that
+ * need to get past it; the framework refuses the two options together, since Symfony would
+ * answer from the defaults and ignore the inputs.
  */
 class CommandsTest extends TestCase
 {
@@ -98,6 +104,48 @@ class CommandsTest extends TestCase
 		$this->assertSame(0, $tester->getStatusCode());
 		$this->assertStringContainsString('Aborting', $tester->getDisplay());
 		$this->assertUnarchived($user->user_id);
+	}
+
+	/**
+	 * The confirmed path, which nothing covered until the framework could answer a question: the
+	 * command finds the account, asks, is told yes, and archives it. The repository tests cover
+	 * what archiving does to an account; this covers the command reaching it at all, and saying
+	 * that it did.
+	 */
+	public function test_a_confirmed_run_archives_the_named_account(): void
+	{
+		$user = $this->anActiveUser();
+
+		$tester = $this->runConsoleCommand(ArchiveUser::class, ['user' => $user->user_id], ['inputs' => ['yes']]);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString($user->username, $tester->getDisplay());
+
+		$this->app()->em()->clearEntityCache();
+		$archived = $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
+		$this->assertNotNull($archived->ArchivedUser, 'no archive row was written');
+		$this->assertSame('disabled', $archived->user_state);
+	}
+
+	/**
+	 * And back again through the other command, which is the pair's whole purpose. A restored
+	 * account cannot log in until it completes a password reset, by design, so what is asserted
+	 * is the state coming back and the archive row going away.
+	 */
+	public function test_a_confirmed_run_restores_the_named_account(): void
+	{
+		$user = $this->anActiveUser();
+		$previousState = $user->user_state;
+		$this->runConsoleCommand(ArchiveUser::class, ['user' => $user->user_id], ['inputs' => ['yes']]);
+
+		$tester = $this->runConsoleCommand(RestoreUser::class, ['user' => $user->user_id], ['inputs' => ['yes']]);
+
+		$this->assertSame(0, $tester->getStatusCode());
+
+		$this->app()->em()->clearEntityCache();
+		$restored = $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
+		$this->assertNull($restored->ArchivedUser, 'the archive row was left behind');
+		$this->assertSame($previousState, $restored->user_state);
 	}
 
 	// ---- every user --------------------------------------------------------------------------

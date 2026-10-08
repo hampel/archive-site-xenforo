@@ -117,7 +117,7 @@ What it covers, by class:
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
-| `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
+| `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
 | `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
 
 **A render on a forum shared with other add-ons logs errors that are nobody's fault, so the
@@ -133,11 +133,11 @@ which is what a sandbox is for — worth doing when the rendering half changes m
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The suite needs the test framework at 5.17 or later** — `composer.json` requires `^5.17`.
+**The suite needs the test framework at 5.18 or later** — `composer.json` requires `^5.18`.
 Before 5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their
 tests would silently exercise core; `runJobToCompletion()` for the jobs arrived in 5.3, a rendered
 template's `$xf` in 5.4, `runConsoleCommand()` in 5.10, a CSRF token on a non-GET `dispatch()` in
-5.15, and `assertConsoleCommandsLoad()` in 5.17. Every rendering test fails on 5.3, because without
+5.15, `assertConsoleCommandsLoad()` in 5.17, and a command's answers in 5.18. Every rendering test fails on 5.3, because without
 `$xf` the modifications cannot read the visitor or the options.
 
 The remaining checks are the ones a unit suite cannot reach:

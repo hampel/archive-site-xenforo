@@ -47,14 +47,14 @@ Built on `hampel/xenforo-test-framework` v5, isolated to this add-on through `$a
 nothing Composer installs can reach a release, and `config.platform.php` sits at 8.3 for the test
 framework's sake without that raising anything this add-on ships.
 
-**Requires the framework at `^5.17`.** 5.0.0 fixed isolation dropping class extensions registered
+**Requires the framework at `^5.18`.** 5.0.0 fixed isolation dropping class extensions registered
 on a class name XenForo 2.3 renamed — and `Login`, `PasswordReset` and `Finder\User` are exactly the
 renamed names this add-on's 2.2 floor requires, so on an older framework their tests exercise core
 instead. 5.3.0 added `runJobToCompletion()`, which the job tests use to run the archive and restore
 jobs as XenForo's job manager would. 5.4.0 gave a rendered template the `$xf` every template
 modification here reads, which is what lets `TemplateRenderingTest` check what a guest and a member
-actually see. 5.10.0 added `runConsoleCommand()` and 5.17.0 `assertConsoleCommandsLoad()`, which is
-all that `Cli\CommandsTest` is.
+actually see. 5.10.0 added `runConsoleCommand()`, 5.17.0 `assertConsoleCommandsLoad()` and 5.18.0 the
+`inputs` that answer a command's confirmation, which is all that `Cli\CommandsTest` is.
 
 **5.15.0 is the release that changed how an existing test is written.** A non-GET `dispatch()` now
 carries a CSRF token, so the archive button is dispatched as a real `POST` with `preDispatch()` and
