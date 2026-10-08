@@ -125,6 +125,21 @@ testing `Admin.is_super_admin` in each query, and that is not a style choice: th
 is a left join, so an ordinary user has `NULL` there, `NULL <> 1` evaluates to `NULL`, and a
 condition that looks like it excludes admins excludes **everyone else** instead.
 
+## The add-on declares that it has no secrets
+
+`Listener::adminApiRedaction()` answers the `hampel_admin_api_redaction` event with an empty
+secret list for `Hampel/ArchiveSite`, claiming both `config.php` keys the add-on reads. **The
+declaration is what gets the settings shown**: an Admin API reporting a forum's configuration
+reports an undeclared add-on's text settings as merely set or not set, since nothing has said
+which of them are credentials.
+
+There is nothing to withhold here — the options hold a message, a URL and a switch, and the
+config keys hold user ids and a boolean. **It is not a dependency on the Admin API either**: an
+event no installed add-on defines is never fired, so the method is never called on a forum
+without it. Keep it to arrays of strings, and add any new option to the declaration in the same
+commit — `ListenerTest` fails when an option's id reads like a credential and is neither
+declared nor listed as deliberately not one.
+
 ## Archiving and restoring are not inverses
 
 `archiveUser()` clears the user's remember-me records, sets their auth to `XF:NoPassword`, records

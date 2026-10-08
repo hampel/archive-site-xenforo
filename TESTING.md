@@ -53,6 +53,9 @@ and the modification simply never applies, which is correct rather than a failur
 - **Admin navigation and route** under `Admin CP > Users > Archive Site` — protected, active,
   archived and partially archived user lists, plus the archive action.
 - **Four CLI commands** in the `archive:` namespace, and two jobs behind them.
+- **One code event listener**, answering `hampel_admin_api_redaction` to declare that this add-on
+  has no secrets, so that an Admin API can show its settings rather than withholding them. It is
+  not a dependency: an event no installed add-on defines is never fired.
 
 ## Fragile points
 
@@ -107,6 +110,7 @@ What it covers, by class:
 | test | settles |
 |---|---|
 | `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
+| `ListenerTest` | the secret declaration names only this add-on, declares no secret options, claims both config keys the code reads, and fails if an option is added whose id reads like a credential |
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row; archiving and restoring change exactly what they should, and refuse protected users and super admins |
 | `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
