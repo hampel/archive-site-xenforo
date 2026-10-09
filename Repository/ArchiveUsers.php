@@ -36,52 +36,78 @@ class ArchiveUsers extends Repository
 	}
 
 	/**
+	 * Accounts that look archived but that this add-on has no record of: shut, with no usable
+	 * password, and no archive row - so nothing knows what their user_state used to be and they
+	 * cannot be restored. An account whose password was removed before this add-on existed, or by
+	 * some other route.
+	 *
+	 * **`user_state = 'disabled'` is what keeps ordinary members out of this set.** XenForo
+	 * creates passwordless accounts for registrations through a connected account, and until
+	 * 2.2.0 this finder reported every one of them as partially archived, on the strength of the
+	 * authentication scheme alone. Such an account is not shut, so it is active.
+	 *
 	 * @return \XF\Mvc\Entity\Finder
 	 */
 	public function partiallyArchivedUsers()
 	{
 		return $this->finder('XF:User')
-            ->with('Auth', true)
+            ->with('Auth')
             ->with('ArchivedUser', false)
             ->where('user_id', '!=', $this->protectedUserIds())
-            ->where('Auth.scheme_class', '=', 'XF:NoPassword')
-            ->where('ArchivedUser.previous_state', '=', null);
+            ->where('ArchivedUser.previous_state', '=', null)
+            ->where('user_state', '=', 'disabled')
+            ->whereOr([
+                ['Auth.scheme_class', '=', 'XF:NoPassword'],
+                ['Auth.user_id', '=', null],
+            ]);
 	}
 
     /**
+     * Accounts this add-on archived, and can restore. **The archive row is the whole test.**
+     *
+     * Until 2.2.0 this also required the account to have no password, so an archived account
+     * whose scheme was anything else - an administrator set a password on it, or another add-on
+     * owns its authentication - appeared in none of the four sets at all. The row is what records
+     * the previous state, so the row is what makes an account restorable.
+     *
      * @return \XF\Mvc\Entity\Finder
      */
     public function archivedUsers()
     {
-        // Auth is a left join: an account with no authentication row at all is archived like any
-        // other, and must not vanish from the list for want of a password it never had
+        // Auth is a left join so the entity arrives hydrated; nothing is filtered on it
         return $this->finder('XF:User')
             ->with('Auth')
             ->with('ArchivedUser', true)
             ->where('user_id', '!=', $this->protectedUserIds())
-            ->whereOr([
-                ['Auth.scheme_class', '=', 'XF:NoPassword'],
-                ['Auth.user_id', '=', null],
-            ])
             ->where('ArchivedUser.previous_state', '!=', null);
     }
 
 	/**
+	 * Everything else: no archive row, and not shut without a password.
+	 *
+	 * The second condition is the complement of partiallyArchivedUsers(), so the three sets
+	 * partition every unprotected account - which `test_every_unprotected_account_is_in_exactly
+	 * _one_set` asserts against the forum rather than against the SQL.
+	 *
+	 * **`Auth.scheme_class != 'XF:NoPassword'` is NULL, and therefore false, for an account with
+	 * no authentication row - which is what is wanted here**, since such an account has no
+	 * password either. That is the opposite of the trap in `protectedUserIds()`, where a NULL
+	 * from a left join silently excluded everybody; it is safe here only because it sits in an OR
+	 * beside a condition that does not depend on the join.
+	 *
 	 * @return \XF\Mvc\Entity\Finder
 	 */
 	public function activeUsers()
 	{
-		// Auth is a left join, for the same reason as in archivedUsers(): an account with no
-		// authentication row is still an account the archive job will reach
 		return $this->finder('XF:User')
             ->with('Auth')
             ->with('ArchivedUser', false)
             ->where('user_id', '!=', $this->protectedUserIds())
+            ->where('ArchivedUser.previous_state', '=', null)
             ->whereOr([
+                ['user_state', '!=', 'disabled'],
                 ['Auth.scheme_class', '!=', 'XF:NoPassword'],
-                ['Auth.user_id', '=', null],
-            ])
-            ->where('ArchivedUser.previous_state', '=', null);
+            ]);
 	}
 
 	public function archiveUser(User $user)

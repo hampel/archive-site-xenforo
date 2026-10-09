@@ -49,6 +49,14 @@ class ArchiveUsersTest extends TestCase
 	}
 
 	/**
+	 * The user ids a finder matches, as integers.
+	 */
+	protected function idsIn(\XF\Mvc\Entity\Finder $finder): array
+	{
+		return array_map('intval', array_values($finder->pluckFrom('user_id')->fetch()->toArray()));
+	}
+
+	/**
 	 * Re-read from the database, so an assertion cannot pass on the in-memory entity alone.
 	 */
 	protected function reload(int $userId): User
@@ -61,9 +69,19 @@ class ArchiveUsersTest extends TestCase
 	/**
 	 * An ordinary account with its authentication row removed, inside the test's transaction.
 	 */
+	/**
+	 * An account with no authentication row at all - a direct insert, a partial import, another
+	 * add-on creating users.
+	 *
+	 * Its state is set to valid deliberately. The borrowed account may be `disabled` already, and
+	 * since 2.2.0 shut-and-passwordless is what partiallyArchivedUsers() means, so leaving it
+	 * would make this fixture a different case from the one every test using it is about.
+	 */
 	protected function anAccountWithNoAuthRecord(): User
 	{
 		$user = $this->anActiveUser();
+		$user->user_state = 'valid';
+		$user->save();
 		$this->app()->db()->delete('xf_user_authenticate', 'user_id = ?', $user->user_id);
 
 		return $this->reload($user->user_id);
@@ -139,6 +157,77 @@ class ArchiveUsersTest extends TestCase
 	}
 
 	// ---- archiving ------------------------------------------------------------------------------
+
+	// ---- which set an account belongs in --------------------------------------------------------
+
+	/**
+	 * The regression. A member who registered through a connected account has no password and is
+	 * not shut, and until 2.2.0 the scheme alone put them in partiallyArchivedUsers() - reported
+	 * to an administrator as an account whose password had been removed by some other route - and
+	 * kept them out of the active count entirely.
+	 */
+	public function test_a_passwordless_member_who_is_not_shut_is_active(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$user->user_state = 'valid'; // the borrowed account may be disabled; this case is not
+		$user->save();
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+
+		$this->assertContains($user->user_id, $this->idsIn($this->repo()->activeUsers()),
+			'a passwordless member who is not shut should be active');
+		$this->assertNotContains($user->user_id, $this->idsIn($this->repo()->partiallyArchivedUsers()),
+			'a passwordless member who is not shut is not partially archived');
+	}
+
+	/**
+	 * What partially archived now means: shut, with no usable password, and no archive row - so
+	 * nothing recorded what the state used to be and nothing can restore it.
+	 */
+	public function test_a_shut_passwordless_account_with_no_archive_row_is_partially_archived(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+		$user->user_state = 'disabled';
+		$user->save();
+
+		$this->assertContains($user->user_id, $this->idsIn($this->repo()->partiallyArchivedUsers()));
+		$this->assertNotContains($user->user_id, $this->idsIn($this->repo()->activeUsers()));
+	}
+
+	/**
+	 * The gap that needed no other add-on to appear: an archived account whose scheme is anything
+	 * but XF:NoPassword - an administrator set a password on it, or another add-on owns its
+	 * authentication - used to be in none of the four sets, so no page listed it and no count
+	 * included it, while its archive row sat there waiting to be restored.
+	 */
+	public function test_an_archived_account_that_has_a_password_is_still_archived(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$this->repo()->archiveUser($user);
+		$user->Auth->setPassword('a password somebody set afterwards');
+		$user->Auth->save();
+
+		$this->assertContains($user->user_id, $this->idsIn($this->repo()->archivedUsers()),
+			'an archived account with a password belongs to no other set either');
+		$this->assertNotContains($user->user_id, $this->idsIn($this->repo()->activeUsers()));
+	}
 
 	public function test_archiving_disables_the_account_and_removes_its_password(): void
 	{

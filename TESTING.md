@@ -48,8 +48,8 @@ and the modification simply never applies, which is correct rather than a failur
 
 - **Four options**, all under `Admin CP > Options > Archive Site`: home page message, content end
   message, its URL, and whether that URL opens in a new window.
-- **One table**, `xf_archivesite_user`, holding each archived user's previous `user_state`, with
-  an `ArchivedUser` entity over it.
+- **One table**, `xf_archivesite_user`, holding each archived account's previous `user_state` and
+  authentication scheme, with an `ArchivedUser` entity over it.
 - **Admin navigation and route** under `Admin CP > Users > Archive Site` — protected, active,
   archived and partially archived user lists, plus the archive action.
 - **Six CLI commands** in the `archive:` namespace: four that archive and restore, plus
@@ -93,7 +93,9 @@ the intent on an archived forum and a trap anywhere else.
 
 **Archiving and restoring are not inverses.** Restoring resets the password to a random value, so
 a restored user cannot log in until they complete a password reset. The original hash is gone the
-moment the account is archived, by design.
+moment the account is archived, by design. An account that had **no** password keeps none, which
+is what the recorded scheme is for - anything that changes how archiving records state deserves a
+test of that case, since the account cannot tell you it was wronged.
 
 ## Automated
 
@@ -114,7 +116,7 @@ What it covers, by class:
 | `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
 | `ListenerTest` | the secret declaration names only this add-on, declares no secret options, claims both config keys the code reads, and fails if an option is added whose id reads like a credential |
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
-| `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row; archiving and restoring change exactly what they should, and refuse protected users and super admins |
+| `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row, a passwordless member who is not shut (active), a shut passwordless account with no archive row (partially archived) and an archived account that has a password (archived); archiving and restoring change exactly what they should, refuse protected users and super admins, leave an account that never had a password without one, and touch nothing on an account nobody archived |
 | `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
 | `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |

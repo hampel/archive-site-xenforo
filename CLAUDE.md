@@ -144,28 +144,55 @@ declared nor listed as deliberately not one.
 ## Archiving and restoring are not inverses
 
 `archiveUser()` clears the user's remember-me records, sets their auth to `XF:NoPassword`, records
-their `user_state` in `xf_archivesite_user`, then sets the state to `disabled`. `restoreUser()`
-puts the recorded state back and deletes the row — but it calls `Auth::resetPassword()`, which
-generates a random password rather than returning the old one. **A restored user cannot log in
-until they complete a password reset**, and that is the design, not an oversight: the original
-hash is gone the moment the account is archived.
+their `user_state` **and their authentication scheme** in `xf_archivesite_user`, then sets the
+state to `disabled`. `restoreUser()` puts the recorded state back and deletes the row — and where
+the account had a password, it calls `Auth::resetPassword()`, which generates a random one rather
+than returning the old. **A restored user cannot log in until they complete a password reset**, and
+that is the design, not an oversight: the original hash is gone the moment the account is archived.
+
+**An account that never had a password is left without one.** That is what
+`previous_scheme_class` is for, and the question is asked through XenForo's own
+`hasPassword()` so another add-on's passwordless scheme is covered as well as core's. Until 2.2.0
+a connected-account member came back with a real password they never had, reachable by
+lost-password where before they were not. An empty recorded scheme means it is not known — a row
+written before 2.2.0 — and keeps the old behaviour, since an upgrade cannot find out
+retroactively.
+
+**And `restoreUser()` touches the authentication row only when there is an archive row to restore
+from.** It is reachable from `archive:restore-user` with any account at all, so until 2.2.0 a
+mistyped name reset a real member's password and changed nothing else.
 
 This is why the repository exposes four finders rather than two, and why the ACP has a page for
 each:
 
-| finder | the user has | means |
+| finder | the account has | means |
 |---|---|---|
 | `protectedUsers()` | super admin, or an ID in `config.php` | never touched by a run |
-| `activeUsers()` | a real password or no authentication row at all, no archive row, not protected | not yet archived |
-| `archivedUsers()` | an archive row, and no password - `XF:NoPassword` or no authentication row | archived by this add-on, restorable |
-| `partiallyArchivedUsers()` | `XF:NoPassword`, no archive row | password removed some other way |
+| `activeUsers()` | no archive row, and is not both shut and passwordless | not archived by this add-on |
+| `archivedUsers()` | an archive row | archived by this add-on, restorable |
+| `partiallyArchivedUsers()` | no archive row, `user_state = 'disabled'`, no usable password | looks archived, and nothing recorded what it was |
+
+**The archive row is what decides, and the authentication scheme is only a secondary check.**
+Until 2.2.0 all three keyed on `XF:NoPassword`, which is not a synonym for archived: XenForo
+creates passwordless accounts for registrations through a connected account, so every one of those
+members was reported as *partially archived* and left out of the active count, while an archived
+account whose scheme was anything else — an administrator set a password on it, or another
+add-on owns its authentication — appeared in **none** of the four sets at all, archive row and
+all. The three unprotected sets now partition the forum, which
+`test_every_unprotected_account_is_in_exactly_one_set` asserts against the real data rather than
+against the SQL.
+
+**`user_state = 'disabled'` is what keeps ordinary members out of `partiallyArchivedUsers()`**, so
+the set means what its name says: an account that looks archived — shut, with no way to log in
+— and that this add-on has no record of, so nothing can restore it. A member who merely has no
+password is active.
 
 **An account can have no `xf_user_authenticate` row at all** — a direct insert, a partial import,
-another add-on creating users. `Auth` is therefore a left join in `activeUsers()` and
-`archivedUsers()`, and `archiveUser()` and `restoreUser()` skip only the password step for such an
-account. Until 2.0.2 every finder inner-joined `Auth`, so the account appeared in no count or list,
-while the archive job, which walks every row in `xf_user`, crashed on it part-way and left every
-later account active.
+another add-on creating users. `Auth` is a left join everywhere for that reason, and
+`archiveUser()` and `restoreUser()` skip only the password step for such an account. Until 2.0.2
+every finder inner-joined `Auth`, so the account appeared in no count or list, while the archive
+job, which walks every row in `xf_user`, crashed on it part-way and left every later account
+active.
 
 **Keep a `User` entity in step with the database when changing its archive row.** XenForo's
 queue runner, `Job\Manager::runQueue()`, runs every due job in one request through one entity
