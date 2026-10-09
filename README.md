@@ -11,6 +11,36 @@ By [Simon Hampel](https://xenforo.com/community/members/sim.4264/).
 
 Requires XenForo 2.2.0 or higher. Tested on XenForo 2.2 and 2.3.
 
+## Commands
+
+```bash
+php cmd.php archive:config                 # what this forum is set up to archive and hide
+php cmd.php archive:validate               # whether it can actually do it
+php cmd.php archive:archive-all-users      # archive every unprotected account, after confirming
+php cmd.php archive:restore-all-users      # the inverse
+php cmd.php archive:archive-user <user>    # one account, by id, name or email
+php cmd.php archive:restore-user <user>
+```
+
+`archive:config` prints every setting and which `config.php` key or option it came from, and
+changes nothing. `archive:validate` proves the forum can do it: the protected list resolves to
+real accounts, the archive table is there, the class extensions apply, and **every template
+modification still matches the template it targets** — which is the one thing that breaks silently
+when XenForo changes a core template, since a modification that matches nothing still reports as
+`ok`.
+
+Its exit code is a contract:
+
+| | all fine | warnings only | any failure |
+|---|---|---|---|
+| `archive:validate` | 0 | 0 | 1 |
+| `archive:validate --strict` | 0 | 2 | 1 |
+
+So `archive:validate && next-step` carries on past a warning, and `--strict` is for a monitor that
+wants to hear about one. **1 always means failed** — this is not the monitoring-plugin numbering,
+where 1 is a warning. `--unattended` is accepted and does nothing, since neither command writes or
+sends anything; it is there so that one command line works across add-ons.
+
 ## Configuration
 
 Two settings live in the install's `src/config.php` rather than in the admin control panel, because

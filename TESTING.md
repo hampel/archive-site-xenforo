@@ -52,7 +52,9 @@ and the modification simply never applies, which is correct rather than a failur
   an `ArchivedUser` entity over it.
 - **Admin navigation and route** under `Admin CP > Users > Archive Site` — protected, active,
   archived and partially archived user lists, plus the archive action.
-- **Four CLI commands** in the `archive:` namespace, and two jobs behind them.
+- **Six CLI commands** in the `archive:` namespace: four that archive and restore, plus
+  `archive:config` and `archive:validate`, which report what the forum is set up to do and prove
+  it. Two jobs sit behind the bulk pair.
 - **One code event listener**, answering `hampel_admin_api_redaction` to declare that this add-on
   has no secrets, so that an Admin API can show its settings rather than withholding them. It is
   not a dependency: an event no installed add-on defines is never fired.
@@ -121,6 +123,7 @@ What it covers, by class:
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
+| `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` passes on a configured forum, fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification and an id that is not a user, exits 2 for a warning only under `--strict`, and turns a check that throws into one `[fail]` without ending the run; no log call lacks the add-on prefix |
 | `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
 | `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
 
@@ -141,8 +144,8 @@ behaviour it names removed. That is the standard to keep when adding one.
 Before 5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their
 tests would silently exercise core; `runJobToCompletion()` for the jobs arrived in 5.3, a rendered
 template's `$xf` in 5.4, `runConsoleCommand()` in 5.10, a CSRF token on a non-GET `dispatch()` in
-5.15, `assertConsoleCommandsLoad()` in 5.17, and a command's answers in 5.18. Every rendering test fails on 5.3, because without
-`$xf` the modifications cannot read the visitor or the options.
+5.15, `assertConsoleCommandsLoad()` in 5.17, and a command's answers in 5.18. Every rendering
+test fails on 5.3, because without `$xf` the modifications cannot read the visitor or the options.
 
 The remaining checks are the ones a unit suite cannot reach:
 
@@ -160,8 +163,20 @@ grep -rnE "\bphrase(Deferred|dException)?\(" . --include='*.php' \
   | grep -vE "XF::(phrase|phraseDeferred|phrasedException)\(\s*['\"][^'\"[:space:]]+['\"]\s*[),]"
 ```
 
-**Every template modification still applies.** Any row at 0 is a dead modification, and nothing
-else reports it. Run this after every XenForo upgrade:
+**Every template modification still applies, and `archive:validate` is how you find out.** Any
+modification applying nowhere is a `[fail]` row naming it, so the check after a XenForo upgrade is
+one command:
+
+```bash
+php ../../../../cmd.php archive:validate            # 0 clean, 1 something failed
+php ../../../../cmd.php archive:validate --strict   # 2 when there are warnings and no failures
+```
+
+It also proves the protected list resolves to real accounts, the archive table is present, and the
+six class extensions apply. `archive:config` prints the settings and which key each came from, and
+writes nothing.
+
+The query the command replaced is still worth knowing, since it shows the counts themselves:
 
 ```sql
 SELECT m.modification_key, COALESCE(SUM(l.apply_count), 0) AS applied

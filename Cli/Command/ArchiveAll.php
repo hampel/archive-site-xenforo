@@ -41,7 +41,7 @@ class ArchiveAll extends AbstractRebuildCommand
 		if ($protectedCount == 0)
 		{
 			$output->writeln("<error>" . \XF::phrase('hampel_archivesite_no_protected_users_found') . "</error>");
-			\XF::logError(\XF::phrase('hampel_archivesite_no_protected_users_found_error'));
+			\XF::logError('ArchiveSite: ' . \XF::phrase('hampel_archivesite_no_protected_users_found_error'));
 			return 1;
 		}
 

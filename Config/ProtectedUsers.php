@@ -2,6 +2,28 @@
 
 class ProtectedUsers
 {
+	const SOURCE_SETTINGS = 'settings';
+	const SOURCE_LEGACY = 'legacy';
+	const SOURCE_NONE = 'none';
+
+	/**
+	 * Which config.php key the list is coming from, which is the first thing to know when an
+	 * install protects somebody it did not expect to - or nobody at all. One definition, used by
+	 * get() and reported by archive:config, so the precedence cannot be described in two places
+	 * and drift.
+	 *
+	 * @return string one of the SOURCE_ constants
+	 */
+	public static function source()
+	{
+		if (Settings::get('protectedUsers') !== null)
+		{
+			return self::SOURCE_SETTINGS;
+		}
+
+		return self::legacyProtectedUsers() === null ? self::SOURCE_NONE : self::SOURCE_LEGACY;
+	}
+
 	/**
 	 * Every user id an archive run must leave alone, from config.php. Super admins are protected
 	 * as well, and are added by Repository\ArchiveUsers::protectedUsers() rather than here.
@@ -10,12 +32,9 @@ class ProtectedUsers
 	 */
 	public static function get()
 	{
-		$userids = Settings::get('protectedUsers');
-
-		if ($userids === null)
-		{
-			$userids = self::legacyProtectedUsers();
-		}
+		$userids = self::source() == self::SOURCE_LEGACY
+			? self::legacyProtectedUsers()
+			: Settings::get('protectedUsers');
 
 		if (!$userids) return [];
 		if (!is_array($userids)) return array($userids);

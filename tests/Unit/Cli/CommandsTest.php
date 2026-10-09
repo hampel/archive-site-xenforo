@@ -46,7 +46,7 @@ class CommandsTest extends TestCase
 	{
 		$classes = $this->assertConsoleCommandsLoad();
 
-		$this->assertCount(4, $classes, 'the add-on ships four commands');
+		$this->assertCount(6, $classes, 'the add-on ships six commands');
 	}
 
 	// ---- a single user -----------------------------------------------------------------------

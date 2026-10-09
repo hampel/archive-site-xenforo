@@ -53,8 +53,9 @@ renamed names this add-on's 2.2 floor requires, so on an older framework their t
 instead. 5.3.0 added `runJobToCompletion()`, which the job tests use to run the archive and restore
 jobs as XenForo's job manager would. 5.4.0 gave a rendered template the `$xf` every template
 modification here reads, which is what lets `TemplateRenderingTest` check what a guest and a member
-actually see. 5.10.0 added `runConsoleCommand()`, 5.17.0 `assertConsoleCommandsLoad()` and 5.18.0 the
-`inputs` that answer a command's confirmation, which is all that `Cli\CommandsTest` is.
+actually see. 5.10.0 added `runConsoleCommand()`, 5.17.0 `assertConsoleCommandsLoad()` and 5.18.0
+the `inputs` that answer a command's confirmation - between them, all that `Cli\CommandsTest` and
+`Cli\ReportCommandsTest` are.
 
 **5.15.0 is the release that changed how an existing test is written.** A non-GET `dispatch()` now
 carries a CSRF token, so the archive button is dispatched as a real `POST` with `preDispatch()` and
@@ -261,8 +262,10 @@ reports zero replacements and the page renders as stock — a guest sees the log
 birthdays the add-on exists to hide, and nothing raises an error. **The status column still says
 `ok`**: that reports whether the modification ran, not whether it matched anything.
 
-**The check is `apply_count`, and it is worth running after every XF upgrade**, because nothing
-else will tell you. `xf_template_modification_log` holds one row per template per modification:
+**The check is `apply_count`, and `archive:validate` is what runs it** — a `[fail]` row naming
+every modification that applies nowhere, so after an XF upgrade the question is one command rather
+than a query somebody has to remember. The query it replaces is still worth knowing, since
+`xf_template_modification_log` holds one row per template per modification:
 
 ```sql
 SELECT m.modification_key, SUM(l.apply_count) AS applied
@@ -297,6 +300,33 @@ find string no longer matches.
 
 `TESTING.md` lists every modification and what to look at. It is the whole verification story for
 this half of the add-on — work through it after any XF upgrade, not just after a change here.
+
+## `archive:config` and `archive:validate` say what the forum is set up to do, and prove it
+
+The two self-describing commands, to the convention the `xenforo-addon-validate` skill carries.
+They exist here because **the settings that matter most are not on the options page**: the
+protected list and the mail switch live in `config.php`, so the control panel cannot show either,
+and the template modifications fail silently by design.
+
+- **`archive:config` reads and prints.** Which `config.php` key supplied the protected list — the
+  nested one or the deprecated flat one — how many accounts it protects, whether mail to members
+  is allowed, and the four options. It writes nothing and sends nothing, and a test asserts that.
+- **`archive:validate` exercises it.** An empty protected list is a `[fail]`, because an archive
+  run would then leave nobody able to log in and the ACP's own button does not guard against it.
+  `allowMail` being on is a `[warn]`. The modification check is the one that earns the command.
+- **The exit contract is 0/1, with `--strict` for 2** on warnings only, and `Cli\RendersReport`'s
+  `checkExitCode()` is the whole implementation. `--unattended` is accepted and does nothing, since
+  neither command writes nor sends; it exists so one command line works across add-ons.
+- **`Cli\RendersReport` is a copy of `Hampel/Monolog`'s**, with three typed properties and the
+  `void` return types removed because this add-on declares XF 2.2 and therefore PHP 7.0, where
+  Monolog declares 7.4. **Fix the original and take it again**; do not improve the copy here.
+- **Every `\XF::logError()` in the add-on begins with `ArchiveSite: `**, and a test fails if one
+  does not. A log mirror skips its own rows by that prefix, and a row without one is alerted on
+  through the handler that just failed.
+- **Resolve a class extension with `extension()->extendClass($fromClass)`, never
+  `class_exists($toClass)`.** An extension class extends an `XFCP_` proxy that XenForo declares
+  only while resolving that extension, so autoloading it directly throws `Class ... XFCP_...
+  not found` — which is a fault in the check, not in the add-on. That cost a false `[fail]` here.
 
 ## Upgrades clean up after themselves, which makes a development checkout dangerous
 
