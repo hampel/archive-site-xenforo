@@ -1,6 +1,32 @@
 CHANGELOG
 =========
 
+2.1.0 (2026-10-09)
+------------------
+
+* new setting `$config['archiveSite']['allowMail']` re-enables mail to members, for a development
+  or staging copy of an archived forum. Installing this add-on otherwise stops mail to anyone who
+  is not a super administrator or protected
+* all settings now live under one `$config['archiveSite']` array, holding `protectedUsers` and
+  `allowMail`. The old `$config['archiveSiteProtectedUsers']` still works and needs no change on
+  upgrade; the new key overrides it where both are set
+* new command `archive:config` prints every setting and which `config.php` key or option it came
+  from, which is the only way to see the protected list without the admin control panel
+* new command `archive:validate` checks that the forum can do what it is configured to do: the
+  protected list resolves to real accounts, the archive table is present, the class extensions
+  apply, and **every template modification still matches the template it targets** - which
+  otherwise fails silently when XenForo changes a core template. It exits 0, or 1 on a failure,
+  with `--strict` for 2 on warnings alone
+* security - a member whose account has no password but was never archived is no longer told the
+  site is archived, and their failed logins now count towards XenForo's brute-force limit. This
+  affects accounts registered through a connected account, which XenForo creates without a
+  password
+* bug fix - such a member can request a password by email again, which is how XenForo intends
+  them to move off a passwordless account
+* bug fix - restoring an account that was awaiting approval no longer fails when it is archived
+  and restored in the same background job run
+* this add-on now tells a monitoring API which of its settings are secrets - none of them are
+
 2.0.2 (2026-09-22)
 ------------------
 
