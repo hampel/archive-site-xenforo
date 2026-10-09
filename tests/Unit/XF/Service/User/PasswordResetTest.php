@@ -8,7 +8,13 @@ use XF\Entity\User;
 
 /**
  * An archived account has no password, and a reset would give it one - undoing the archive from
- * the outside. So the add-on refuses to start a reset for any account whose auth is XF:NoPassword.
+ * the outside. So the add-on refuses to start a reset for an account it has archived.
+ *
+ * **An archive row is the test, not the authentication scheme.** Core creates XF:NoPassword
+ * accounts for registrations through a connected account, and core's own
+ * AbstractAuth::hasPassword() docblock says such a member moves off that scheme by requesting a
+ * password by email - this very path, which core's canTriggerConfirmation() allows deliberately.
+ * Refusing it by scheme broke the one route those members have.
  */
 class PasswordResetTest extends TestCase
 {
@@ -72,5 +78,25 @@ class PasswordResetTest extends TestCase
 		$allowed = $this->canTrigger($user, $error);
 
 		$this->assertTrue($allowed, 'core refused: ' . ($error ? $error->getName() : 'no error'));
+	}
+
+	/**
+	 * The regression: a member with no password and no archive row is core's business, and core
+	 * allows the reset - it is how a connected-account member gets a password at all.
+	 */
+	public function test_a_passwordless_member_who_was_never_archived_is_left_to_core(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+		$this->app()->em()->clearEntityCache();
+		$user = $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
+
+		$this->assertTrue($this->canTrigger($user, $error), $error ? (string) $error : '');
 	}
 }

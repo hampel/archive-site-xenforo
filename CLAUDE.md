@@ -236,12 +236,23 @@ list, and an archived forum's statistics collapse overnight. The override widens
   failure rather than follow it. Re-read the core method after any XF upgrade and port whatever
   changed.
 
-  **The "archived" message is only for an account that really is archived** — auth `XF:NoPassword`,
-  and neither protected nor a super admin. Every other failure takes core's path, which records the
-  attempt. That is a security property, not a wording choice: until 2.0.2 the message went to any
-  unprotected member, returned before `recordFailedAttempt()`, and so switched XenForo's
-  brute-force limit off for every ordinary member who still had a password. An archived account
-  has no password to guess, which is the only reason its failure can skip the count.
+  **The "archived" message is only for an account that really is archived** — which means **an
+  archive row**, plus no usable password, and neither protected nor a super admin. Every other
+  failure takes core's path, which records the attempt. That is a security property, not a wording
+  choice: until 2.0.2 the message went to any unprotected member, returned before
+  `recordFailedAttempt()`, and so switched XenForo's brute-force limit off for every ordinary
+  member who still had a password. An archived account has no password to guess, which is the only
+  reason its failure can skip the count.
+
+  **`XF:NoPassword` is not a synonym for archived, and testing for it was the same bug a second
+  time.** XenForo creates passwordless accounts itself — `RegisterController` calls
+  `setNoPassword()` for a registration through a connected account — and another add-on can have
+  its own passwordless scheme. Until 2.1.0 both this extension and `PasswordReset` keyed on the
+  scheme, so those members were told the site was archived and were exempt from the throttle, and
+  could not request the password that core's own `AbstractAuth::hasPassword()` docblock says is
+  how they move off that scheme. Both now key on `$user->ArchivedUser`, with
+  `getAuthenticationHandler()->hasPassword()` as the "no password to guess" half, which covers
+  another add-on's scheme as well as core's.
 - **`XF\Mail\Mail`** declares the class twice in one file, inside an `if (\XF::$versionId >=
   2030000)` branch, because `setToUser()` gained a `: \XF\Mail\Mail` return type in XF 2.3 and an
   incompatible signature is a fatal, not a warning. Any further change to that method has to be

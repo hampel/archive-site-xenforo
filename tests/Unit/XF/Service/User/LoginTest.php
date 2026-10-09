@@ -12,6 +12,12 @@ use XF\Entity\User;
  * core changes, so these pin both halves: the add-on's message, and the core behaviour it
  * reproduces around it.
  *
+ * **The archive row is what makes an account archived, not its authentication scheme.** XenForo
+ * creates XF:NoPassword accounts itself for a registration through a connected account, so the
+ * scheme alone said "archived" about members who never were - and because the denial returns
+ * before recordFailedAttempt(), it also exempted them from the brute-force limit. Both halves are
+ * asserted below.
+ *
  * Failed logins are recorded in xf_login_attempt, so every test runs inside a transaction.
  */
 class LoginTest extends TestCase
@@ -44,6 +50,26 @@ class LoginTest extends TestCase
 		$this->app()->em()->clearEntityCache();
 
 		return $user;
+	}
+
+	/**
+	 * The shape XenForo itself creates for a registration through a connected account: no
+	 * password, and nothing this add-on has ever touched.
+	 */
+	protected function aPasswordlessUserWhoWasNeverArchived(): User
+	{
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
+		$user = $repo->activeUsers()->fetchOne();
+		if (!$user || !$user->Auth)
+		{
+			$this->markTestSkipped('needs an active, non-protected user with an authentication row');
+		}
+
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+		$this->app()->em()->clearEntityCache();
+
+		return $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
 	}
 
 	protected function aSuperAdmin(): User
@@ -170,5 +196,21 @@ class LoginTest extends TestCase
 		$this->assertNull($this->validate('no-such-user-' . mt_rand(), 'whatever', $error));
 
 		$this->assertSame('requested_user_x_not_found', $error->getName());
+	}
+
+	/**
+	 * The regression. A member whose account has no password but no archive row is not archived,
+	 * so they get core's message - and their attempt is counted, which the old condition skipped
+	 * on their behalf.
+	 */
+	public function test_a_passwordless_member_who_was_never_archived_gets_core_s_failure(): void
+	{
+		$user = $this->aPasswordlessUserWhoWasNeverArchived();
+		$before = $this->attempts($user->username);
+
+		$this->assertNull($this->validate($user->username, 'not the password', $error));
+
+		$this->assertSame('incorrect_password', $error->getName());
+		$this->assertSame($before + 1, $this->attempts($user->username), 'the attempt was not recorded');
 	}
 }

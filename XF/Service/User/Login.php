@@ -35,15 +35,20 @@ class Login extends XFCP_Login
 		$auth = $user->Auth;
 		if (!$auth || !$auth->authenticate($password))
 		{
-			// Only an account that has actually been archived is told the site is archived. It has no
-			// password, so there is nothing to guess and no attempt to count. Anyone who still has a
-			// password takes core's path below, so their failures are recorded and XenForo's
-			// brute-force limit applies to them.
-			$hasNoPassword = $auth
-				? $auth->scheme_class == 'XF:NoPassword'
-				: (bool) $user->ArchivedUser; // no authentication row at all: archived if we archived it
+			// Only an account this add-on has actually archived is told the site is archived, and
+			// the archive row is what says so - not the authentication scheme. XenForo creates
+			// XF:NoPassword accounts itself, for a registration through a connected account that
+			// never set a password, and another add-on can have its own passwordless scheme; none
+			// of those accounts is archived, and telling their owner the site is archived is both
+			// wrong and a throttle bypass, since this branch returns before recordFailedAttempt().
+			//
+			// The second half is the security property: an archived account has no password to
+			// guess, which is the only reason its failure can skip the count. An account that
+			// somehow still has a usable one takes core's path below, archived or not.
+			$handler = $auth ? $auth->getAuthenticationHandler() : null;
+			$archivedAndPasswordless = $user->ArchivedUser && !($handler && $handler->hasPassword());
 
-			if ($hasNoPassword
+			if ($archivedAndPasswordless
 				&& !ProtectedUsers::isProtected($user->user_id)
 				&& !$user->getIsSuperAdmin()
 			)

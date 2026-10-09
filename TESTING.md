@@ -13,7 +13,7 @@ The PHPUnit suite settles most of the last; *Automated* says what it covers and 
 | `XF\Finder\User` | rewrites `isValidUser()` so archived users still count as valid, keeping member counts and statistics honest |
 | `XF\Mail\Mail` | `setToUser()` refuses any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set |
 | `XF\Service\User\Login` | **replaces** `validate()` outright, so a non-protected user gets an "archived" message instead of "incorrect password" |
-| `XF\Service\User\PasswordReset` | extends `canTriggerConfirmation()` to refuse users whose auth is `XF:NoPassword` |
+| `XF\Service\User\PasswordReset` | extends `canTriggerConfirmation()` to refuse a reset for an account this add-on has archived - keyed on the archive row, since core creates passwordless accounts of its own |
 | `XF\Widget\MembersOnline` | `render()` returns empty for guests |
 
 All six name the pre-2.3 core class spellings, which is what the declared XenForo 2.2 floor
@@ -120,8 +120,8 @@ What it covers, by class:
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not; `allowMail` lets the same member through, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
-| `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, with or without a password - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
-| `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password is left to core |
+| `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, and a passwordless account that was never archived - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
+| `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password, and a passwordless user who was never archived, are both left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
 | `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` passes on a configured forum, fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification and an id that is not a user, exits 2 for a warning only under `--strict`, and turns a check that throws into one `[fail]` without ending the run; no log call lacks the add-on prefix |
 | `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
