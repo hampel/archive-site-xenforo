@@ -20,6 +20,24 @@ class Setup extends AbstractSetup
         $this->createTables();
     }
 
+    /**
+     * Gated on 2.2.0's own id rather than the alpha's, so it runs for every install below the
+     * release - and guarded with columnExists(), because a step numbered at the release re-runs
+     * for anyone who took a pre-release and ADD COLUMN is not idempotent.
+     */
+    public function upgrade2020070Step1(array $stepParams = [])
+    {
+        $sm = $this->schemaManager();
+
+        if (!$sm->columnExists('xf_archivesite_user', 'previous_scheme_class'))
+        {
+            $sm->alterTable('xf_archivesite_user', function(Alter $table)
+            {
+                $table->addColumn('previous_scheme_class', 'varchar', 100)->setDefault('');
+            });
+        }
+    }
+
 	/**
 	 * Remove files that this add-on used to ship and no longer does.
 	 *
@@ -54,6 +72,10 @@ class Setup extends AbstractSetup
         {
             $table->addColumn('user_id', 'int');
             $table->addColumn('previous_state', 'varchar', 32);
+            // the authentication scheme the account had before archiving, so that restoring does
+            // not hand a password to an account that never had one. Empty where it is not known:
+            // a row written before 2.2.0, or an account that had no authentication row at all.
+            $table->addColumn('previous_scheme_class', 'varchar', 100)->setDefault('');
             $table->addPrimaryKey('user_id');
         });
     }

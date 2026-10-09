@@ -13,6 +13,7 @@ class ArchivedUser extends Entity
 		$structure->columns = [
 			'user_id' => ['type' => self::UINT, 'required' => true],
 			'previous_state' => ['type' => self::STR, 'maxLength' => 32, 'required' => true],
+			'previous_scheme_class' => ['type' => self::STR, 'maxLength' => 100, 'default' => ''],
 		];
 
 		$structure->relations = [

@@ -346,6 +346,107 @@ class ArchiveUsersTest extends TestCase
 		$this->assertNotNull($reloaded->ApprovalQueue, 'the approval queue entry was not put back');
 	}
 
+	/**
+	 * The regression. XenForo creates passwordless accounts itself for a registration through a
+	 * connected account, and archiving overwrites whatever scheme an account had with
+	 * XF:NoPassword - so restoring used to hand those accounts a real password they never had,
+	 * leaving them reachable by lost-password where before they were not. The scheme recorded at
+	 * archive time is what tells them apart.
+	 */
+	public function test_restoring_does_not_give_a_password_to_an_account_that_never_had_one(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		// the shape core creates for a connected-account registration
+		$user->Auth->setNoPassword();
+		$user->Auth->save();
+
+		$this->repo()->archiveUser($user);
+		$this->assertSame('XF:NoPassword', $user->ArchivedUser->previous_scheme_class,
+			'the scheme was not recorded');
+
+		$this->repo()->restoreUser($user);
+
+		$reloaded = $this->reload($user->user_id);
+		$this->assertSame('XF:NoPassword', $reloaded->Auth->scheme_class,
+			'the restored account was given a password it never had');
+	}
+
+	/**
+	 * And the other side of it: an ordinary member still comes back with a password, random and
+	 * unknown, so they complete a reset to get in. That is the design, not an oversight.
+	 */
+	public function test_restoring_still_resets_the_password_of_an_account_that_had_one(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth || $user->Auth->scheme_class == 'XF:NoPassword')
+		{
+			$this->markTestSkipped('needs an active user who has a password');
+		}
+
+		$scheme = $user->Auth->scheme_class;
+		$before = $user->Auth->data;
+
+		$this->repo()->archiveUser($user);
+		$this->assertSame($scheme, $user->ArchivedUser->previous_scheme_class);
+
+		$this->repo()->restoreUser($user);
+
+		$reloaded = $this->reload($user->user_id);
+		$this->assertSame($scheme, $reloaded->Auth->scheme_class);
+		$this->assertNotEquals($before, $reloaded->Auth->data, 'the password was not reset');
+	}
+
+	/**
+	 * A row written before 2.2.0 records no scheme, and an upgrade cannot find out retroactively,
+	 * so the unknown case keeps the behaviour every earlier version had.
+	 */
+	public function test_an_unknown_previous_scheme_is_treated_as_having_had_a_password(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$this->repo()->archiveUser($user);
+		$user->ArchivedUser->previous_scheme_class = '';
+		$user->ArchivedUser->save();
+
+		$this->repo()->restoreUser($user);
+
+		$reloaded = $this->reload($user->user_id);
+		$this->assertNotSame('XF:NoPassword', $reloaded->Auth->scheme_class,
+			'an account with an unrecorded scheme should still be reset, as before 2.2.0');
+	}
+
+	/**
+	 * restoreUser() is reachable from archive:restore-user with any account at all, so an account
+	 * nobody archived must come out untouched - resetting a member's password because somebody
+	 * typed the wrong name is not a restore.
+	 */
+	public function test_restoring_an_account_that_was_never_archived_leaves_its_password_alone(): void
+	{
+		$user = $this->anActiveUser();
+		if (!$user->Auth)
+		{
+			$this->markTestSkipped('needs an active user with an authentication row');
+		}
+
+		$scheme = $user->Auth->scheme_class;
+		$before = $user->Auth->data;
+
+		$this->assertTrue($this->repo()->restoreUser($user));
+
+		$reloaded = $this->reload($user->user_id);
+		$this->assertSame($scheme, $reloaded->Auth->scheme_class);
+		$this->assertEquals($before, $reloaded->Auth->data, 'an unarchived account had its password reset');
+	}
+
 	public function test_restoring_refuses_a_super_admin(): void
 	{
 		$admin = $this->aSuperAdmin();

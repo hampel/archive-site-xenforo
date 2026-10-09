@@ -95,6 +95,8 @@ class ArchiveUsers extends Repository
 		// clear User Remember records so cookies no longer work
 		$this->repository('XF:UserRemember')->clearUserRememberRecords($user->user_id);
 
+        $previousScheme = $user->Auth ? $user->Auth->scheme_class : '';
+
         // remove users password - an account with no authentication row has none to remove, and
         // is archived all the same rather than stopping the run
         if ($user->Auth)
@@ -110,6 +112,10 @@ class ArchiveUsers extends Repository
             $archivedUser->bulkSet([
                 'user_id' => $user->user_id,
                 'previous_state' => $user->user_state,
+                // what the account authenticated with before this, so restoreUser() can tell an
+                // account that had a password from one that never did. Empty for an account with
+                // no authentication row.
+                'previous_scheme_class' => $previousScheme,
             ]);
 
             $archivedUser->save();
@@ -139,16 +145,27 @@ class ArchiveUsers extends Repository
             return false;
         }
 
-        // reset a users password so they can log in again (after they do a forgot password)
-		if ($user->Auth)
-		{
-			$user->Auth->resetPassword();
-			$user->Auth->save();
-		}
-
         if ($user->ArchivedUser)
         {
             $previousState = $user->ArchivedUser->previous_state;
+
+            // Give the account a password again - a random one, so the owner still has to go
+            // through a password reset - but ONLY where it had one before being archived.
+            //
+            // XenForo creates passwordless accounts for registrations through a connected
+            // account, and another add-on can have its own passwordless scheme. Archiving
+            // overwrote whatever that was with XF:NoPassword, so restoring used to hand those
+            // accounts a real password they never had, leaving them reachable by lost-password
+            // where before they were not. The recorded scheme is what tells them apart.
+            //
+            // The auth row is also left alone entirely when there is no archive row: this method
+            // is reachable from archive:restore-user with any account, and resetting a member's
+            // password because somebody typed the wrong name is not a restore.
+            if ($user->Auth && $this->previousSchemeHadPassword($user->ArchivedUser->previous_scheme_class))
+            {
+                $user->Auth->resetPassword();
+                $user->Auth->save();
+            }
 
             // An account awaiting approval has a row in the approval queue, and XF\Entity\User
             // deletes it when the state leaves 'moderated' - which archiving does - then builds a
@@ -172,4 +189,35 @@ class ArchiveUsers extends Repository
 
         return true;
 	}
+
+    /**
+     * Whether the scheme an account had before archiving provided a password at all.
+     *
+     * An empty value means it is not known - a row written before 2.2.0 recorded no scheme, and
+     * so did an account with no authentication row - and the answer there is the behaviour every
+     * earlier version had: reset the password. Most accounts did have one, and an upgrade cannot
+     * find out retroactively.
+     *
+     * @param string $schemeClass
+     *
+     * @return bool
+     */
+    protected function previousSchemeHadPassword($schemeClass)
+    {
+        if (!$schemeClass)
+        {
+            return true;
+        }
+
+        try
+        {
+            // XenForo's own notion of it, so another add-on's passwordless scheme is covered too
+            return \XF::app()->auth($schemeClass)->hasPassword();
+        }
+        catch (\Throwable $e)
+        {
+            // a scheme this install no longer has: treat it as it was treated before 2.2.0
+            return true;
+        }
+    }
 }
