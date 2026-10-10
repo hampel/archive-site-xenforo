@@ -73,7 +73,7 @@ class Validate extends Command
 
 		$this->checkSection('Accounts');
 		$this->probe('guest messages', function () { $this->guestMessages(); });
-		$this->probe('account counts', function () { $this->accountCounts(); });
+		$this->probe('account state', function () { $this->accountState(); });
 
 		$output->writeln('');
 
@@ -286,26 +286,56 @@ class Validate extends Command
 	}
 
 	/**
-	 * Partially archived accounts lost their password by some route that recorded no previous
-	 * state, so nothing can restore them. Worth surfacing wherever this runs rather than only in
-	 * the control panel.
+	 * Where the forum has got to, which is the add-on's own state rather than its configuration.
+	 *
+	 * **An account that is neither archived nor protected is a warning**, because the add-on is
+	 * installed and that account can still log in: archiving has been set up and not finished.
+	 * The row says which kind of unfinished it is, since the two want different actions - a forum
+	 * that has never archived anybody has a run to make, and one that has archived some has a run
+	 * that stopped or accounts that have registered since.
+	 *
+	 * A warning rather than a failure, so a gate is not blocked by it, and `--strict` is what
+	 * turns it into something a monitor hears about. A forum running only the guest-hiding half of
+	 * this add-on will warn for as long as it does so, which is correct: the archiving half is
+	 * switched on and doing nothing.
 	 */
-	protected function accountCounts()
+	protected function accountState()
 	{
 		$repo = $this->repo();
+
+		$active = (int) $repo->activeUsers()->total();
+		$archived = (int) $repo->archivedUsers()->total();
+		$protected = count($repo->protectedUserIds());
 		$partial = (int) $repo->partiallyArchivedUsers()->total();
 
-		$this->checkOk('counts', sprintf(
-			'%d active, %d archived, %d protected',
-			$repo->activeUsers()->total(),
-			$repo->archivedUsers()->total(),
-			count($repo->protectedUserIds())
-		));
-
-		if ($partial)
+		if (!$active)
 		{
-			$this->checkWarn('partially archived', $partial . ' account(s) have no password and no archive row, so cannot be restored');
+			$this->checkOk('archiving', sprintf(
+				'complete - %d archived, %d protected, none left',
+				$archived,
+				$protected
+			));
 		}
+		else if (!$archived)
+		{
+			$this->checkWarn('archiving', sprintf(
+				'not started - %d account(s) can still log in, %d protected',
+				$active,
+				$protected
+			));
+		}
+		else
+		{
+			$this->checkWarn('archiving', sprintf(
+				'incomplete - %d archived, but %d account(s) can still log in',
+				$archived,
+				$active
+			));
+		}
+
+		$partial
+			? $this->checkWarn('partially archived', $partial . ' account(s) have no password and no archive row, so cannot be restored')
+			: $this->checkOk('partially archived', 'none');
 	}
 
 	/**

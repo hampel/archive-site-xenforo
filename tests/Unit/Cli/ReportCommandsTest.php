@@ -40,6 +40,28 @@ class ReportCommandsTest extends TestCase
 		});
 	}
 
+	/**
+	 * A forum that has finished archiving: nothing active, something archived, nothing partial.
+	 *
+	 * **Needed to isolate any other warning.** The development forum has 2011 accounts that can
+	 * still log in, so `archive:validate` warns there whatever else is true - and a `--strict`
+	 * test that did not mock this would exit 2 for that reason and pass while asserting nothing
+	 * about the warning it names.
+	 */
+	protected function mockFullyArchivedForum(): void
+	{
+		$none = $this->app()->finder('XF:User')->where('user_id', 0);
+		$some = $this->app()->finder('XF:User')->where('user_id', '>', 0);
+
+		$this->mockRepository('Hampel\ArchiveSite:ArchiveUsers', function ($mock) use ($none, $some)
+		{
+			$mock->shouldReceive('protectedUserIds')->andReturn([1]);
+			$mock->shouldReceive('activeUsers')->andReturn($none);
+			$mock->shouldReceive('archivedUsers')->andReturn($some);
+			$mock->shouldReceive('partiallyArchivedUsers')->andReturn($none);
+		});
+	}
+
 	// ---- config ------------------------------------------------------------------------------
 
 	public function test_config_names_the_key_the_protected_list_came_from(): void
@@ -139,11 +161,26 @@ class ReportCommandsTest extends TestCase
 
 	public function test_strict_turns_that_warning_into_exit_2(): void
 	{
+		$this->mockFullyArchivedForum();
 		$this->setConfig('archiveSite', ['allowMail' => true]);
 
 		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
 
 		$this->assertSame(2, $tester->getStatusCode());
+		$this->assertStringContainsString('[warn] mail to members', $tester->getDisplay());
+	}
+
+	/**
+	 * The control for the test above: with the same forum and the flag off, `--strict` exits 0.
+	 * Without this, a 2 could be coming from anything.
+	 */
+	public function test_strict_exits_0_when_there_is_nothing_to_warn_about(): void
+	{
+		$this->mockFullyArchivedForum();
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
 	}
 
 	/**
@@ -272,5 +309,79 @@ class ReportCommandsTest extends TestCase
 		}
 
 		$this->assertSame([], $unprefixed, 'a log call does not carry the add-on prefix');
+	}
+
+	// ---- how far the archiving has got --------------------------------------------------------
+
+	/**
+	 * The add-on is installed and 2011 accounts can still log in, which means archiving was set
+	 * up and never run. A warning, not a failure: nothing is broken, and a gate should not be
+	 * blocked by it - but somebody should know.
+	 */
+	public function test_a_forum_that_has_not_archived_anybody_warns(): void
+	{
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('[warn] archiving', $tester->getDisplay());
+		$this->assertStringContainsString('not started', $tester->getDisplay());
+	}
+
+	/**
+	 * The distinction worth drawing: a run that stopped part-way, or accounts registered since
+	 * one finished, wants a different action from a forum that never started.
+	 */
+	public function test_a_half_archived_forum_says_incomplete(): void
+	{
+		$none = $this->app()->finder('XF:User')->where('user_id', 0);
+		$some = $this->app()->finder('XF:User')->where('user_id', '>', 0);
+
+		$this->mockRepository('Hampel\ArchiveSite:ArchiveUsers', function ($mock) use ($none, $some)
+		{
+			$mock->shouldReceive('protectedUserIds')->andReturn([1]);
+			$mock->shouldReceive('activeUsers')->andReturn($some);
+			$mock->shouldReceive('archivedUsers')->andReturn($some);
+			$mock->shouldReceive('partiallyArchivedUsers')->andReturn($none);
+		});
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('[warn] archiving', $tester->getDisplay());
+		$this->assertStringContainsString('incomplete', $tester->getDisplay());
+	}
+
+	public function test_a_finished_forum_reports_archiving_complete(): void
+	{
+		$this->mockFullyArchivedForum();
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('[ ok ] archiving', $tester->getDisplay());
+		$this->assertStringContainsString('complete', $tester->getDisplay());
+	}
+
+	/**
+	 * An account with no password and no archive row cannot be restored, because nothing recorded
+	 * what its state was. Nothing can fix that, so it is a warning for as long as it is true.
+	 */
+	public function test_a_partially_archived_account_warns(): void
+	{
+		$none = $this->app()->finder('XF:User')->where('user_id', 0);
+		$some = $this->app()->finder('XF:User')->where('user_id', '>', 0);
+
+		$this->mockRepository('Hampel\ArchiveSite:ArchiveUsers', function ($mock) use ($none, $some)
+		{
+			$mock->shouldReceive('protectedUserIds')->andReturn([1]);
+			$mock->shouldReceive('activeUsers')->andReturn($none);
+			$mock->shouldReceive('archivedUsers')->andReturn($some);
+			$mock->shouldReceive('partiallyArchivedUsers')->andReturn($some);
+		});
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('[warn] partially archived', $tester->getDisplay());
 	}
 }

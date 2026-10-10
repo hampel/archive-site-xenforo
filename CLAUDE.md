@@ -338,13 +338,18 @@ be a floor change**, whether or not `addon.json` said so.
 Twelve of the fourteen are `str_replace` against literal text copied out of core templates, tabs
 included. When XF edits one of those templates the find string stops matching, the modification
 reports zero replacements and the page renders as stock — a guest sees the log-in prompts and the
-birthdays the add-on exists to hide, and nothing raises an error. **The status column still says
-`ok`**: that reports whether the modification ran, not whether it matched anything.
+birthdays the add-on exists to hide, and nothing raises an error. **The log's `status` column still
+says `ok`**: it reports whether the modification ran, not whether it matched anything.
 
-**The check is `apply_count`, and `archive:validate` is what runs it** — a `[fail]` row naming
-every modification that applies nowhere, so after an XF upgrade the question is one command rather
-than a query somebody has to remember. The query it replaces is still worth knowing, since
-`xf_template_modification_log` holds one row per template per modification:
+**XenForo does surface it, though, and this file said otherwise until 2.2.1.**
+`XF\Entity\TemplateModification::getLogSummary()` counts a row with `status === 'ok'` and
+`apply_count === 0` as `not_found`, and the core `template_modification_list` admin template
+renders that count — so a dead modification shows as *not found* in
+`Admin CP > Appearance > Template modifications`. What `archive:validate` adds is a `[fail]` and an
+exit code, for a forum nobody is looking at; it is not the only evidence there is.
+
+The query behind both is worth knowing, since `xf_template_modification_log` holds one row per
+template per modification:
 
 ```sql
 SELECT m.modification_key, SUM(l.apply_count) AS applied
@@ -392,7 +397,18 @@ and the template modifications fail silently by design.
   is allowed, and the four options. It writes nothing and sends nothing, and a test asserts that.
 - **`archive:validate` exercises it.** An empty protected list is a `[fail]`, because an archive
   run would then leave nobody able to log in and the ACP's own button does not guard against it.
-  `allowMail` being on is a `[warn]`. The modification check is the one that earns the command.
+  `allowMail` being on is a `[warn]`.
+- **It also reports how far the archiving has got, which is state rather than configuration.** An
+  account that is neither archived nor protected can still log in, so archiving set up and not
+  finished is a `[warn]` — *not started* where nothing has been archived, *incomplete* where some
+  has, because those want different actions. A partially archived account warns for as long as it
+  exists, since nothing can restore it. **A forum running only the guest-hiding half warns
+  permanently, and that is correct**: the archiving half is switched on and doing nothing. It stays
+  exit 0 without `--strict`, so it blocks no gate.
+- **Most of what `validate` reports is also somewhere in the control panel**, and that is not an
+  argument against it: the point is an exit code for a forum nobody is looking at. Do not describe
+  a check here as the only evidence of something without reading what core already shows — the
+  modification check was documented that way and it was wrong.
 - **The exit contract is 0/1, with `--strict` for 2** on warnings only, and `Cli\RendersReport`'s
   `checkExitCode()` is the whole implementation. `--unattended` is accepted and does nothing, since
   neither command writes nor sends; it exists so one command line works across add-ons.

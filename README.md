@@ -23,11 +23,16 @@ php cmd.php archive:restore-user <user>
 ```
 
 `archive:config` prints every setting and which `config.php` key or option it came from, and
-changes nothing. `archive:validate` proves the forum can do it: the protected list resolves to
-real accounts, the archive table is there, the class extensions apply, and **every template
-modification still matches the template it targets** — which is the one thing that breaks silently
-when XenForo changes a core template, since a modification that matches nothing still reports as
-`ok`.
+changes nothing. `archive:validate` proves the forum can do it: the protected list resolves to real
+accounts, the archive table is there, the class extensions apply, and every template modification
+still matches the template it targets — which is what breaks quietly when XenForo changes a core
+template.
+
+**It also reports how far the archiving has got**, because that is the add-on's own state rather
+than its configuration: an account that is neither archived nor protected can still log in, so a
+forum that set archiving up and never ran it, or whose run stopped part-way, gets a warning saying
+which of those it is. So does an account with no password and no archive row, which cannot be
+restored because nothing recorded what its state was.
 
 Its exit code is a contract:
 

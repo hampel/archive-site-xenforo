@@ -75,10 +75,14 @@ deliberate test of the empty case.
 
 **Template modifications match stock markup, so a XenForo upgrade breaks them silently.** Twelve
 use an exact `str_replace` against text copied from core templates, tabs included. When a core
-template is reformatted the find stops matching, the page renders as stock, and **the status
-column still says `ok`** — it reports whether the modification ran, not whether it matched. Two
-modifications had been dead since the 2.3 upgrade before anyone noticed. The apply-count query
-under *Automated* is the only thing that reveals this.
+template is reformatted the find stops matching, the page renders as stock, and **the log's
+`status` column still says `ok`** — it reports whether the modification ran, not whether it
+matched. Two modifications had been dead since the 2.3 upgrade before anyone noticed.
+
+**XenForo counts it as `not_found` in the admin list**, from `status = 'ok'` with a zero apply
+count, so `Admin CP > Appearance > Template modifications` does show it to anyone who looks.
+`archive:validate` turns that into an exit code instead, which is what a forum nobody is looking
+at needs.
 
 **`Login::validate()` is a copy of core, not a call through it.** It has to replace the
 authentication failure rather than follow it. Re-read the core method after any XenForo upgrade
@@ -126,7 +130,7 @@ What it covers, by class:
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, and a passwordless account that was never archived - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password, and a passwordless user who was never archived, are both left to core |
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving |
-| `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` passes on a configured forum, fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification and an id that is not a user, exits 2 for a warning only under `--strict`, and turns a check that throws into one `[fail]` without ending the run; no log call lacks the add-on prefix |
+| `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification, an id that is not a user, unarchived accounts (saying *not started* or *incomplete*) and accounts that cannot be restored, reports a finished forum as complete, exits 2 for a warning only under `--strict` and 0 when there is nothing to warn about, and turns a check that throws into one `[fail]` without ending the run; no log call lacks the add-on prefix |
 | `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
 | `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
 
@@ -193,9 +197,11 @@ php ../../../../cmd.php archive:validate            # 0 clean, 1 something faile
 php ../../../../cmd.php archive:validate --strict   # 2 when there are warnings and no failures
 ```
 
-It also proves the protected list resolves to real accounts, the archive table is present, and the
-six class extensions apply. `archive:config` prints the settings and which key each came from, and
-writes nothing.
+It also proves the protected list resolves to real accounts, the archive table is present and the
+six class extensions apply, and it reports how far the archiving has got: an account that is
+neither archived nor protected can still log in, so archiving set up and not finished is a warning
+saying *not started* or *incomplete*, and so is an account nothing can restore.
+`archive:config` prints the settings and which key each came from, and writes nothing.
 
 The query the command replaced is still worth knowing, since it shows the counts themselves:
 
