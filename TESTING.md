@@ -11,7 +11,7 @@ The PHPUnit suite settles most of the last; *Automated* says what it covers and 
 |---|---|
 | `XF\Entity\User` | adds the `ArchivedUser` relation; nothing else |
 | `XF\Finder\User` | rewrites `isValidUser()` so archived users still count as valid, keeping member counts and statistics honest |
-| `XF\Mail\Mail` | `setToUser()` refuses any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set |
+| `XF\Mail\Mail` | `setToUser()` **and** `setTo()` refuse any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set. The decision lives in `Mail\Restriction`, shared by both version branches |
 | `XF\Service\User\Login` | **replaces** `validate()` outright, so a non-protected user gets an "archived" message instead of "incorrect password" |
 | `XF\Service\User\PasswordReset` | extends `canTriggerConfirmation()` to refuse a reset for an account this add-on has archived - keyed on the archive row, since core creates passwordless accounts of its own |
 | `XF\Widget\MembersOnline` | `render()` returns empty for guests |
@@ -121,7 +121,7 @@ What it covers, by class:
 | `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
 | `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
-| `XF\Mail\MailTest` | mail to an ordinary member is refused, and to a super admin or protected user is not; `allowMail` lets the same member through, and `false` does not |
+| `XF\Mail\MailTest` | mail to an ordinary member is refused by either setter, and to a super admin or protected user is not; an address no account holds is allowed; an address shared with an unmailable account is refused; a blocked member is recorded once, not twice; `allowMail` lets the same member through by either route, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, and a passwordless account that was never archived - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds |
 | `XF\Service\User\PasswordResetTest` | an archived user cannot start a reset; a user with a password, and a passwordless user who was never archived, are both left to core |

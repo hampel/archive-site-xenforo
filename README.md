@@ -63,6 +63,42 @@ $config['archiveSite'] = [
   whether or not they are archived. That is the intent on an archived forum, and a nuisance on a
   development or staging copy of one, which is what the setting is for.
 
+### Mail to members, and the error log
+
+**Both of XenForo's recipient setters are covered**: mail addressed to a member, and mail
+addressed to an email address that belongs to one. An address no account holds — a contact form,
+an administrator's own entry — is not affected. Where an address belongs to more than one account,
+which XenForo permits, one unmailable account is enough to refuse it.
+
+**Each refusal is recorded in the server error log, one entry per attempt, and that is
+deliberate.** On an archived forum nothing should be mailing members at all, so an attempt is an
+anomaly worth investigating rather than noise to be suppressed: the entry names the account and
+the add-on that tried, which is what makes it possible to find out what is still running. If a
+forum legitimately needs to mail members, `allowMail` is the setting for it, and the log goes
+quiet because nothing is being refused.
+
+## Configuration
+
+Two settings live in the install's `src/config.php` rather than in the admin control panel, because
+an archive run rewrites the database an option would be stored in:
+
+```php
+$config['archiveSite'] = [
+    'protectedUsers' => [1, 2],
+    'allowMail' => false,
+];
+```
+
+- **`protectedUsers`** — user ids an archive run must leave alone, on top of every super
+  administrator, who is always protected. `Admin CP > Users > Archive Site > List Protected Users`
+  shows what an install resolves. Both `archive-all-users` and `restore-all-users` abort when the
+  list comes back empty, which is the one thing standing between a run and a forum nobody can log
+  in to.
+- **`allowMail`** — set it to `true` to let XenForo mail members as it normally would. Installing
+  this add-on otherwise stops mail to anyone who is not a super administrator and not protected,
+  whether or not they are archived. That is the intent on an archived forum, and a nuisance on a
+  development or staging copy of one, which is what the setting is for.
+
 ### What the mail restriction does and does not cover
 
 Two things are worth knowing if you run other add-ons that send mail.

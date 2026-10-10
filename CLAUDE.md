@@ -234,13 +234,25 @@ so.
 
 ## Installing this add-on stops mail to ordinary users
 
-`XF\Mail\Mail::setToUser()` is extended to refuse any recipient who is not a super admin and not
-in the protected list. It does not check whether the user is archived — the moment the add-on is
-active, every normal member is unmailable, which is the point on an archived site and a
+**Both recipient setters are extended** — `setToUser()`, which is how XenForo addresses mail to a
+member, and `setTo()`, which takes an address and is how an add-on composing its own recipient
+list reaches one. Until 2.2.0 only the first was covered, so a newsletter or digest built that way
+reached archived members untouched. Neither checks whether the user is archived: the moment the
+add-on is active, every normal member is unmailable, which is the point on an archived site and a
 foot-gun anywhere else.
 
-The refusal sets `$this->setupError` rather than throwing, so the caller sees the send fail the
-way XF's own validation failures do instead of a fatal.
+`Mail\Restriction` holds the decision because the extension class is declared twice (below), and a
+rule written in both bodies is a rule that will eventually differ between them. It resolves an
+address through the `XF:User` finder, and **`xf_user.email` is not a unique index**, so one
+unmailable account among several at that address refuses the send.
+
+**The refusal sets `$this->setupError` directly, and the server error log entry it produces is the
+point of the design, not a side effect.** XenForo's `send()` and `queue()` write that error to the
+log, one entry per attempt, naming the account — and on an archived forum an attempt to mail a
+member is an anomaly worth investigating, because nothing should be doing it. Do not route it
+through core's `applySetupError()`, which **throws** when `debugMode` is on: the refusal would then
+behave differently on a development install from a production one, and a blocked newsletter would
+become a fatal rather than a log entry.
 
 **`$config['archiveSite']['allowMail']` switches the restriction off entirely**, for a development
 or staging copy of an archived forum that still has to send mail. It is config rather than an

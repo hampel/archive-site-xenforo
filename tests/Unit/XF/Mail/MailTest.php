@@ -18,6 +18,10 @@ use XF\Mail\Mail;
  * $config['archiveSite']['allowMail'] switches the whole restriction off, for a development copy
  * of an archived forum. Nothing else does, so the tests for it assert both directions: the same
  * member who is refused by default is accepted with the flag set.
+ *
+ * **Both recipient setters are covered.** setToUser() is how XenForo addresses mail to a member;
+ * setTo() takes an address, which is how an add-on composing its own recipient list reaches one,
+ * and until 2.2.0 that route was not blocked at all.
  */
 class MailTest extends TestCase
 {
@@ -129,5 +133,101 @@ class MailTest extends TestCase
 		$mail = $this->app()->mailer()->newMail()->setToUser($user);
 
 		$this->assertNull($this->setupError($mail));
+	}
+
+	// ---- setTo(), the address route -----------------------------------------------------------
+
+	/**
+	 * The regression. An add-on that builds its own recipient list - a newsletter, a digest -
+	 * addresses mail by email rather than by member, and that reached archived members
+	 * untouched while setToUser() was the only thing covered.
+	 */
+	public function test_mail_addressed_to_an_ordinary_member_s_address_is_refused(): void
+	{
+		$user = $this->anActiveUser();
+
+		$mail = $this->app()->mailer()->newMail()->setTo($user->email, $user->username);
+
+		$error = $this->setupError($mail);
+		$this->assertNotNull($error, 'mail to a member\'s address was not refused');
+		$this->assertStringContainsString((string) $user->user_id, $error->getMessage(),
+			'the refusal should name the account, for whoever reads the error log');
+	}
+
+	public function test_mail_addressed_to_a_super_admin_s_address_is_allowed(): void
+	{
+		$admin = $this->aSuperAdmin();
+
+		$mail = $this->app()->mailer()->newMail()->setTo($admin->email, $admin->username);
+
+		$this->assertNull($this->setupError($mail));
+	}
+
+	/**
+	 * An address no account holds is nobody's business of ours: a contact form, a copy to an
+	 * administrator's own address, a bounce handler.
+	 */
+	public function test_mail_to_an_address_no_account_holds_is_allowed(): void
+	{
+		$mail = $this->app()->mailer()->newMail()->setTo('nobody-has-this-address@example.com');
+
+		$this->assertNull($this->setupError($mail));
+	}
+
+	/**
+	 * An empty address must not match every account that has no email set - two do on this forum.
+	 * Asserted at the decision rather than through the mailer, because core rejects an empty
+	 * address itself and, with `debugMode` on, `applySetupError()` rethrows rather than recording
+	 * it: the failure would be core's and the test would be about XenForo's debug behaviour.
+	 */
+	public function test_an_empty_address_blocks_nobody(): void
+	{
+		$this->assertSame([], \Hampel\ArchiveSite\Mail\Restriction::blockedUserIds(''));
+		$this->assertSame([], \Hampel\ArchiveSite\Mail\Restriction::blockedUserIds('   '));
+	}
+
+	public function test_the_config_flag_allows_the_address_route_too(): void
+	{
+		$user = $this->anActiveUser();
+		$this->setConfig('archiveSite', ['allowMail' => true]);
+
+		$mail = $this->app()->mailer()->newMail()->setTo($user->email, $user->username);
+
+		$this->assertNull($this->setupError($mail));
+	}
+
+	/**
+	 * xf_user.email is not a unique index, so an address can belong to more than one account, and
+	 * any one of them being unmailable is enough to refuse - the address is where the mail goes.
+	 */
+	public function test_an_address_shared_with_an_ordinary_member_is_refused(): void
+	{
+		$admin = $this->aSuperAdmin();
+		$member = $this->anActiveUser();
+
+		// raw SQL: the entity validates uniqueness, and this is a state the database allows
+		$this->app()->db()->update('xf_user', ['email' => $admin->email], 'user_id = ?', $member->user_id);
+
+		$mail = $this->app()->mailer()->newMail()->setTo($admin->email);
+
+		$error = $this->setupError($mail);
+		$this->assertNotNull($error, 'an address shared with an unmailable account was allowed');
+		$this->assertStringContainsString((string) $member->user_id, $error->getMessage());
+	}
+
+	/**
+	 * A blocked member is refused once, not twice: setToUser() returns before the parent, which
+	 * would otherwise reach the setTo() override and record a second error for the same message.
+	 */
+	public function test_a_blocked_member_records_one_error_not_two(): void
+	{
+		$user = $this->anActiveUser();
+
+		$mail = $this->app()->mailer()->newMail()->setToUser($user);
+
+		$error = $this->setupError($mail);
+		$this->assertNotNull($error);
+		$this->assertSame(1, preg_match_all('/archived user/', $error->getMessage()),
+			'the refusal was recorded more than once');
 	}
 }
