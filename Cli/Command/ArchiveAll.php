@@ -67,7 +67,7 @@ class ArchiveAll extends AbstractRebuildCommand
 
 		if (!in_array($continue, ['yes', 'Yes', 'YES']))
 		{
-			$output->writeln(\XF::phrase('hampel_archivesite_aborting'));
+			$output->writeln((string) \XF::phrase('hampel_archivesite_aborting'));
 			return 0;
 		}
 

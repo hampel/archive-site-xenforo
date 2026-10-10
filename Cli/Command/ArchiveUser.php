@@ -57,7 +57,7 @@ class ArchiveUser extends Command
 
         if (!in_array($continue, ['yes', 'Yes', 'YES']))
         {
-            $output->writeln(\XF::phrase('hampel_archivesite_aborting'));
+            $output->writeln((string) \XF::phrase('hampel_archivesite_aborting'));
             return 0;
         }
 
@@ -66,7 +66,7 @@ class ArchiveUser extends Command
             return 1;
         }
 
-        $output->writeln(\XF::phrase('hampel_archivesite_done'));
+        $output->writeln((string) \XF::phrase('hampel_archivesite_done'));
         return 0;
     }
 }

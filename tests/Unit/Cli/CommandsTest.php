@@ -270,4 +270,41 @@ class CommandsTest extends TestCase
 			$this->assertNotSame('XF:NoPassword', $user->Auth->scheme_class, 'the password was removed');
 		}
 	}
+
+	/**
+	 * Every phrase written to the console is cast to a string first.
+	 *
+	 * **This cannot be asserted behaviourally from here**, because the suite runs on XenForo 2.3,
+	 * whose bundled Symfony declares `OutputFormatter::format(?string $message)` and so coerces a
+	 * Phrase at the boundary. XenForo 2.2 ships an older Symfony that does not, and
+	 * `$output->writeln(\XF::phrase(...))` there throws `Object of class XF\Language could not be
+	 * converted to string` - so on this add-on's declared floor, `archive:archive-user` archived
+	 * the account and then crashed printing "Done", exit 1, with a row in the server error log.
+	 * Found on a 2.2 sandbox during the 2.2.1 release, from one error-log row that nearly went
+	 * unread.
+	 *
+	 * So the guard is the pattern, not the behaviour: a scan of the commands for the form that
+	 * breaks. It is the same shape as the error-log prefix test below.
+	 */
+	public function test_no_phrase_is_written_to_the_console_uncast(): void
+	{
+		$offenders = [];
+
+		foreach (glob(dirname(__DIR__, 3) . '/Cli/Command/*.php') AS $path)
+		{
+			foreach (file($path) AS $number => $line)
+			{
+				// the four backslashes are two in the regex, which is one literal backslash: '\X'
+				// would be PCRE's grapheme-cluster escape, and a guard written that way matched
+				// nothing and passed against the very code it was added for
+				if (preg_match('/->writeln\(\s*\\\\XF::phrase/', $line))
+				{
+					$offenders[] = basename($path) . ':' . ($number + 1);
+				}
+			}
+		}
+
+		$this->assertSame([], $offenders,
+			'a phrase is passed to writeln() unconcatenated, which throws on XenForo 2.2');
+	}
 }
