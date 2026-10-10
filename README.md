@@ -63,6 +63,22 @@ $config['archiveSite'] = [
   whether or not they are archived. That is the intent on an archived forum, and a nuisance on a
   development or staging copy of one, which is what the setting is for.
 
+### What the mail restriction does and does not cover
+
+Two things are worth knowing if you run other add-ons that send mail.
+
+**It blocks `Mail::setToUser()`, which is how XenForo addresses mail to a member.** Mail addressed
+by email string instead — `setTo('someone@example.com')` — is **not** blocked, because at that point
+there is no member to check. Nearly all of XenForo's own mail goes through `setToUser()`; an
+add-on that composes its own recipients may not.
+
+**Each blocked message is recorded in the server error log**, one entry per recipient. The
+refusal works the way XenForo's own setup failures do: the send is abandoned and the reason
+logged. So an add-on that mails a lot of members — a newsletter, a digest — will fill
+`Admin CP > Logs > Server error log` on a forum where this add-on is blocking them. That is a sign
+the two add-ons disagree about whether the forum should be mailing anybody, rather than a fault in
+either; `allowMail` is the setting that settles it.
+
 `$config['archiveSiteProtectedUsers']`, the flat key used by 2.0.2 and earlier, still works and
 needs no change on upgrade. It is deprecated: `$config['archiveSite']['protectedUsers']` overrides
 it wherever both are set.

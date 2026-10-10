@@ -285,6 +285,21 @@ list, and an archived forum's statistics collapse overnight. The override widens
   incompatible signature is a fatal, not a warning. Any further change to that method has to be
   made in both branches.
 
+**Those two extensions are registered at `execute_order` 1, and that is load-bearing.** XenForo
+applies extensions in `execute_order` then `to_class` order and each one wraps the previous, so the
+last applied is outermost and decides whether anything below it runs — proven on this install by
+resolving a two-extension chain and reading `class_parents()`. At the default order of 10 the tie
+breaks alphabetically, which put this add-on **outside** any sibling whose namespace sorts earlier
+and silently discarded its version of the method. Innermost is the honest place for an extension
+that cannot call its parent: a sibling at the default order now wraps this add-on, and if it calls
+the parent as it should, both apply. The other four extensions call the parent and stay at 10.
+
+`tests/Isolated/ExtensionChainTest.php` proves the composing with a stand-in sibling. **It is
+outside both testsuites in `phpunit.xml` on purpose** — an extension added during a test is
+forgotten at teardown, and the next test then resolves that class with *no* extension at all,
+including this add-on's own. Left in the normal suite it passed and took 47 later tests down with
+it.
+
 The supported range is **XF 2.2 and 2.3**, and all three places that state it agree: the
 `require.XF` floor, the README, and the branch above, which knows about exactly those two. The
 class extensions all name the pre-2.3 core classes — `XF\Service\User\Login`, not

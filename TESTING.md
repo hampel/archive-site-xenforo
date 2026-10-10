@@ -114,6 +114,7 @@ What it covers, by class:
 | test | settles |
 |---|---|
 | `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
+| `XF\Finder\ExtensionOrderTest` | the two extensions that replace their core method are registered inside a default-order sibling, and the four that call the parent are not |
 | `ListenerTest` | the secret declaration names only this add-on, declares no secret options, claims both config keys the code reads, and fails if an option is added whose id reads like a credential |
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row, a passwordless member who is not shut (active), a shut passwordless account with no archive row (partially archived) and an archived account that has a password (archived); archiving and restoring change exactly what they should, refuse protected users and super admins, leave an account that never had a password without one, and touch nothing on an account nobody archived |
@@ -138,6 +139,17 @@ declares logs a warning on every render here, while the same page is faultless i
 `$xf.options.hampelArchiveSite` option, the `ArchivedUser` relation, or one of its own templates.
 **The blanket assertion is the stronger check and wants a forum with only this add-on installed**,
 which is what a sandbox is for — worth doing when the rendering half changes materially.
+
+**`tests/Isolated/` is not collected by a normal run, and has to be asked for by path:**
+
+```bash
+vendor/bin/phpunit tests/Isolated/ExtensionChainTest.php
+```
+
+It holds tests that are only valid in a process where nothing has resolved the class they extend.
+An extension added during a test is forgotten at teardown, and the next test then resolves that
+class with no extension at all - this add-on's own included - so such a test cannot share a run
+with anything. Worth running by hand whenever either overriding extension changes.
 
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
