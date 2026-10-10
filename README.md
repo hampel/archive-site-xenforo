@@ -95,9 +95,7 @@ protected whatever `config.php` says, so no count reaches zero and an archive ru
 what `archive:validate` warns about, naming the ids it found:
 
 ```text
-[warn] config keys              1 id(s) in the deprecated $config['archiveSiteProtectedUsers'] are
-                                not in $config['archiveSite']['protectedUsers'], so they are no
-                                longer protected: 293
+[warn] config keys              1 id(s) in archiveSiteProtectedUsers are not in archiveSite.protectedUsers, so they are no longer protected: 293
 ```
 
 **An absent newer key is not that case.** `$config['archiveSite'] = []` holds no `protectedUsers`,

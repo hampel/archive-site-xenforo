@@ -103,8 +103,11 @@ class Validate extends Command
 
 		if ($ignored)
 		{
+			// Short enough to read in an 80-column terminal, and the dotted spelling rather
+			// than $config['...']['...'] for the same reason; archive:config prints both keys
+			// in full, and this row has to fit on one line to be read at all.
 			$this->checkWarn('config keys', sprintf(
-				"%d id(s) in the deprecated \$config['archiveSiteProtectedUsers'] are not in \$config['%s']['protectedUsers'], so they are no longer protected: %s",
+				'%d id(s) in archiveSiteProtectedUsers are not in %s.protectedUsers, so they are no longer protected: %s',
 				count($ignored),
 				Settings::KEY,
 				implode(', ', $ignored)
