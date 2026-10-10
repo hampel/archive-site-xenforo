@@ -393,6 +393,18 @@ and the template modifications fail silently by design.
   only while resolving that extension, so autoloading it directly throws `Class ... XFCP_...
   not found` — which is a fault in the check, not in the add-on. That cost a false `[fail]` here.
 
+## Uninstalling drops the table, and that is deliberate
+
+`Setup::uninstall()` drops `xf_archivesite_user`, so every recorded `previous_state` goes with it
+while the accounts stay `disabled` and passwordless. There is no guard and no warning, which reads
+like an oversight and is not one: **an archived site generally stays archived.** Restoring users is
+an extraordinary step rather than an expected one, so the normal end state of this add-on is the
+one uninstalling leaves behind, and a warning about losing the ability to reverse something nobody
+is planning to reverse would be noise.
+
+If a forum is going to restore its users, it does that **before** uninstalling —
+`archive:restore-all-users`, or the ACP page, while the table still holds what it needs.
+
 ## Upgrades clean up after themselves, which makes a development checkout dangerous
 
 `Setup::postUpgrade()` calls `enqueuePostUpgradeCleanUp()`, queueing `XF\Job\FileCleanUp` to
