@@ -19,8 +19,34 @@ class ArchiveUsers extends AbstractRebuildJob
         return parent::setupData($data);
     }
 
+	/**
+	 * The accounts this pass will act on: every account on the forum, except the protected ones.
+	 *
+	 * **An empty protected list refuses the whole run.** Archiving every account, administrators
+	 * included, is the one outcome this add-on must never produce by accident, and it is what an
+	 * unprotected run would produce. Both CLI commands abort for that reason; this covers the
+	 * paths that do not go through them - `xf:rebuild`, or anything else enqueuing the job
+	 * directly - since the ACP button is reachable only by a super admin, who is therefore always
+	 * in the list it enqueues.
+	 *
+	 * Returning no ids completes the job, having touched nobody, and the logged error is the
+	 * record. `archive:validate` reports the same state as a failure.
+	 *
+	 * The `?: [0]` below is then unreachable, and deliberate. `$db->quote([])` returns an empty
+	 * string, so an empty list built `NOT IN ()` - a SQL syntax error rather than a no-op - and a
+	 * query that cannot be malformed is worth two characters.
+	 */
 	protected function getNextIds($start, $batch)
 	{
+		$protected = $this->data['protectedUsers'];
+
+		if (!$protected)
+		{
+			\XF::logError('ArchiveSite: ' . \XF::phrase('hampel_archivesite_no_protected_users_found_error'));
+
+			return [];
+		}
+
 		$db = $this->app->db();
 
 		return $db->fetchAllColumn($db->limit(
@@ -28,7 +54,7 @@ class ArchiveUsers extends AbstractRebuildJob
 				SELECT user_id
 				FROM xf_user
 				WHERE user_id > ?
-				AND user_id NOT IN (" . $db->quote($this->data['protectedUsers']) . ")
+				AND user_id NOT IN (" . $db->quote($protected ?: [0]) . ")
 				ORDER BY user_id
 			", $batch
 		), $start);

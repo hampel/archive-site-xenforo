@@ -119,6 +119,20 @@ Two consequences worth holding on to:
   and `restoreUser()`, below the job's own filtering. Keep that second check when editing either —
   the CLI single-user commands rely on it, not on the job's ID query.
 
+**An unprotected run is refused by the job itself, not only by the CLI.** `Job\ArchiveUsers::
+getNextIds()` returns no ids when the protected list is empty, logs the same error the CLI prints,
+and lets the job complete having touched nobody — because archiving every account, administrators
+included, is the one outcome this add-on must never produce by accident. Both bulk CLI commands
+abort for that reason, and the ACP button cannot reach the state at all, since only a super admin
+can press it and a super admin is always in the list it enqueues. What the guard covers is
+everything else: `xf:rebuild`, or any code enqueuing the job directly, on a forum with no super
+admin and nothing in `config.php`.
+
+**It also kept a malformed query out of the database.** `$db->quote([])` returns an empty string,
+so an empty list built `AND user_id NOT IN ()` — a syntax error on the first batch, not a no-op.
+The `?: [0]` still in that query is defence in depth for the same reason: a query that cannot be
+malformed is worth two characters.
+
 **`protectedUserIds()` is the single definition everything else excludes by.** The three other
 finders, the archive job's setup data and the ACP's job enqueue all call it, so "protected" cannot
 drift between them. It resolves super admins through the `protectedUsers()` finder rather than

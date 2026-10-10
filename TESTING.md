@@ -119,7 +119,7 @@ What it covers, by class:
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row, a passwordless member who is not shut (active), a shut passwordless account with no archive row (partially archived) and an archived account that has a password (archived); archiving and restoring change exactly what they should, refuse protected users and super admins, leave an account that never had a password without one, and touch nothing on an account nobody archived |
 | `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
-| `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back |
+| `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back. A run with nothing protected archives nobody, logs the refusal and completes - where it used to fail on a malformed `NOT IN ()` |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused by either setter, and to a super admin or protected user is not; an address no account holds is allowed; an address shared with an unmailable account is refused; a blocked member is recorded once, not twice; `allowMail` lets the same member through by either route, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
@@ -129,6 +129,13 @@ What it covers, by class:
 | `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` passes on a configured forum, fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification and an id that is not a user, exits 2 for a warning only under `--strict`, and turns a check that throws into one `[fail]` without ending the run; no log call lacks the add-on prefix |
 | `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused; a run that does not answer the confirmation archives nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
 | `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
+
+**An empty protected list cannot be set up through job data.** `setupData()` treats an empty list
+as "not supplied yet" and refills it from the repository, so a test that passes
+`['protectedUsers' => []]` gets a normal run. A first attempt at the refusal tests did that and
+archived all 2011 accounts on the development forum, inside the transaction that rolled them back,
+while asserting that nothing had happened. Mock `protectedUserIds()` instead, which is also what
+the real case looks like: a forum with no super admin and nothing in `config.php`.
 
 **A render on a forum shared with other add-ons logs errors that are nobody's fault, so the
 rendering tests do not assert on all of them.** Template modifications are compiled into the

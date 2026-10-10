@@ -212,4 +212,63 @@ class ArchiveUsersTest extends TestCase
 		$this->assertSame($stateBefore, $after['user_state']);
 		$this->assertNull($after['previous_state']);
 	}
+
+	// ---- a run with nothing protected -----------------------------------------------------------
+
+	/**
+	 * A forum with no super admin and nothing in config.php - which is the only way the protected
+	 * list comes back empty, and what `xf:rebuild` or any other direct enqueue would then hand the
+	 * job.
+	 *
+	 * **Passing `['protectedUsers' => []]` as job data does not reach that state**, because
+	 * setupData() treats an empty list as "not supplied yet" and refills it from the repository.
+	 * A first attempt at these tests did exactly that and archived all 2011 accounts on the
+	 * development forum - inside the transaction, which rolled them back - while asserting that
+	 * nothing had happened. Mocking the repository is what makes the list genuinely empty.
+	 */
+	protected function mockNothingProtected(): void
+	{
+		$this->mockRepository('Hampel\ArchiveSite:ArchiveUsers', function ($mock)
+		{
+			$mock->shouldReceive('protectedUserIds')->andReturn([]);
+		});
+	}
+
+	/**
+	 * The run that must never happen: with nothing protected, archiving every account would leave
+	 * a forum nobody can log in to, administrators included. Both CLI commands abort on it; this
+	 * covers everything that does not go through them - `xf:rebuild`, or any other code enqueuing
+	 * the job - and the ACP button, which cannot reach this state because only a super admin can
+	 * press it and a super admin is always in the list it enqueues.
+	 */
+	public function test_a_run_with_nothing_protected_archives_nobody(): void
+	{
+		$this->fakesErrors();
+		$this->mockNothingProtected();
+		$before = $this->accounts();
+
+		$result = $this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers');
+
+		$this->assertTrue($result->completed);
+		$this->assertSame($before, $this->accounts(), 'the run changed an account');
+		$this->assertSame(0, (int) $this->app()->db()->fetchOne('SELECT COUNT(*) FROM xf_archivesite_user'));
+		$this->assertErrorLogged();
+	}
+
+	/**
+	 * The same for the restore job, which inherits the query - and which would otherwise have met
+	 * the malformed `NOT IN ()` on its own first batch.
+	 */
+	public function test_a_restore_run_with_nothing_protected_touches_nobody(): void
+	{
+		$this->fakesErrors();
+		$this->mockNothingProtected();
+		$before = $this->accounts();
+
+		$result = $this->runJobToCompletion('Hampel\ArchiveSite:RestoreUsers');
+
+		$this->assertTrue($result->completed);
+		$this->assertSame($before, $this->accounts());
+		$this->assertErrorLogged();
+	}
 }
