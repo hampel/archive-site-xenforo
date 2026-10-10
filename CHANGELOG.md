@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+2.2.2 (2026-10-10)
+------------------
+
+* `archive:validate` now warns when `$config['archiveSite']['protectedUsers']` names fewer accounts
+  than the deprecated `$config['archiveSiteProtectedUsers']` it replaced, listing the ids that are
+  no longer protected. Nothing else reports this: every super administrator stays protected either
+  way, so no count reaches zero and an archive run proceeds
+* `archive:config` now says whether the deprecated setting is in use, overridden, or discarding ids
+* the what's new template modification described itself as hiding a link on mobile devices. It
+  hides the link in the page header on every device, which is what it has always done - only the
+  description in `Admin CP > Appearance > Template modifications` was wrong
+* `README.md` carried a second, older copy of its configuration section, which still said that mail
+  addressed to an email address was not blocked. It has been blocked since 2.2.0
+
 2.2.1 (2026-10-10)
 ------------------
 
