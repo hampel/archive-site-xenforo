@@ -117,7 +117,7 @@ What it covers, by class:
 
 | test | settles |
 |---|---|
-| `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored |
+| `Config\ProtectedUsersTest` | the list is read from either config key, including a scalar and an empty value; the nested key overrides the deprecated flat one, an empty nested list included, and a settings key that is not an array is ignored. Also what a half-done rename discards: a present-but-empty `archiveSite` falls through to the deprecated key and discards nothing, an empty or narrower `protectedUsers` discards the difference, keys that agree in either order discard nothing, and ids are compared as integers |
 | `XF\Finder\ExtensionOrderTest` | the two extensions that replace their core method are registered inside a default-order sibling, and the four that call the parent are not |
 | `ListenerTest` | the secret declaration names only this add-on, declares no secret options, claims both config keys the code reads, and fails if an option is added whose id reads like a credential |
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
