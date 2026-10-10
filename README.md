@@ -82,44 +82,26 @@ the add-on that tried, which is what makes it possible to find out what is still
 forum legitimately needs to mail members, `allowMail` is the setting for it, and the log goes
 quiet because nothing is being refused.
 
-## Configuration
+## The deprecated protected-users key
 
-Two settings live in the install's `src/config.php` rather than in the admin control panel, because
-an archive run rewrites the database an option would be stored in:
+**The flat `$config['archiveSiteProtectedUsers']` that 2.0.2 and earlier read still works**, so an
+install upgrading from one of those versions needs no change to `config.php` at all. It is
+deprecated: `$config['archiveSite']['protectedUsers']` replaces it, and overrides it wherever both
+are set.
 
-```php
-$config['archiveSite'] = [
-    'protectedUsers' => [1, 2],
-    'allowMail' => false,
-];
+**Where both are set, the newer key is the whole list.** An id named only in the deprecated one is
+no longer protected, and nothing fails when that happens — every super administrator stays
+protected whatever `config.php` says, so no count reaches zero and an archive run proceeds. That is
+what `archive:validate` warns about, naming the ids it found:
+
+```text
+[warn] config keys              1 id(s) in the deprecated $config['archiveSiteProtectedUsers'] are
+                                not in $config['archiveSite']['protectedUsers'], so they are no
+                                longer protected: 293
 ```
 
-- **`protectedUsers`** — user ids an archive run must leave alone, on top of every super
-  administrator, who is always protected. `Admin CP > Users > Archive Site > List Protected Users`
-  shows what an install resolves. Both `archive-all-users` and `restore-all-users` abort when the
-  list comes back empty, which is the one thing standing between a run and a forum nobody can log
-  in to.
-- **`allowMail`** — set it to `true` to let XenForo mail members as it normally would. Installing
-  this add-on otherwise stops mail to anyone who is not a super administrator and not protected,
-  whether or not they are archived. That is the intent on an archived forum, and a nuisance on a
-  development or staging copy of one, which is what the setting is for.
-
-### What the mail restriction does and does not cover
-
-Two things are worth knowing if you run other add-ons that send mail.
-
-**It blocks `Mail::setToUser()`, which is how XenForo addresses mail to a member.** Mail addressed
-by email string instead — `setTo('someone@example.com')` — is **not** blocked, because at that point
-there is no member to check. Nearly all of XenForo's own mail goes through `setToUser()`; an
-add-on that composes its own recipients may not.
-
-**Each blocked message is recorded in the server error log**, one entry per recipient. The
-refusal works the way XenForo's own setup failures do: the send is abandoned and the reason
-logged. So an add-on that mails a lot of members — a newsletter, a digest — will fill
-`Admin CP > Logs > Server error log` on a forum where this add-on is blocking them. That is a sign
-the two add-ons disagree about whether the forum should be mailing anybody, rather than a fault in
-either; `allowMail` is the setting that settles it.
-
-`$config['archiveSiteProtectedUsers']`, the flat key used by 2.0.2 and earlier, still works and
-needs no change on upgrade. It is deprecated: `$config['archiveSite']['protectedUsers']` overrides
-it wherever both are set.
+**An absent newer key is not that case.** `$config['archiveSite'] = []` holds no `protectedUsers`,
+so the deprecated key is read exactly as it was before — which makes it safe for a `config.php`
+generated from a template to declare the parent and leave the list out. Using the deprecated key on
+its own is reported by both commands and is not a warning, so `archive:validate --strict` stays at 0
+on a forum that simply has not renamed it.
