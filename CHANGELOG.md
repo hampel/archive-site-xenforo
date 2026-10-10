@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+2.2.1 (2026-10-10)
+------------------
+
+* bug fix - on XenForo 2.2, `archive:archive-user` and `archive:restore-user` archived or restored
+  the account and then failed while printing their final message, and the other two commands failed
+  the same way when a confirmation was declined. XenForo 2.3 was unaffected
+* `archive:validate` now reports how far the archiving has got, which it previously printed as a
+  plain count. An account that is neither archived nor protected can still log in, so a forum that
+  set archiving up and did not finish is a warning that says which it is - not started, or
+  incomplete. An account with no password and no archive row warns for as long as it exists, since
+  nothing recorded what its state was and nothing can restore it
+
 2.2.0 (2026-10-10)
 ------------------
 
