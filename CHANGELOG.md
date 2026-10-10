@@ -1,6 +1,30 @@
 CHANGELOG
 =========
 
+2.2.0 (2026-10-10)
+------------------
+
+* bug fix - mail addressed to a member's email address is now refused as well as mail addressed to
+  the member. Only the second was covered before, so an add-on that builds its own recipient list,
+  as a newsletter or a digest does, still reached archived members
+* bug fix - restoring an account that never had a password no longer gives it one. XenForo creates
+  passwordless accounts for registrations through a connected account, and those came back
+  reachable by lost-password where before they were not. The authentication scheme an account had
+  is now recorded when it is archived
+* bug fix - the member lists and counts no longer describe a passwordless member as partially
+  archived, and an archived account that still has a password now appears in the archived list
+  instead of in none of them. All three lists are keyed on whether this add-on archived the
+  account, with "partially archived" meaning an account that is shut, has no password, and has no
+  record here
+* bug fix - restoring an account this add-on never archived leaves it alone. Naming the wrong
+  account to `archive:restore-user` used to reset a real member's password
+* bug fix - an archive run with nothing protected is refused and logged, instead of failing with a
+  database error. Archiving every account including every administrator is what such a run would
+  otherwise have done
+* change - this add-on's extensions of `XF\Finder\User` and `XF\Service\User\Login` now run
+  inside another add-on's extensions of the same classes rather than outside them, so another
+  add-on's changes to those methods are no longer discarded
+
 2.1.0 (2026-10-09)
 ------------------
 
