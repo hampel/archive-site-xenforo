@@ -53,6 +53,7 @@ class Config extends Command
 		$source = $this->sourceDescription();
 		$this->detail('source', $source === '' ? '' : $source . self::FROM_CONFIG);
 		$this->detail('listed in config.php', (string) count(ProtectedUsers::get()));
+		$this->detail('deprecated key', $this->legacyKeyState());
 		$this->detail('super admins', (string) $this->superAdminCount());
 		$this->detail('protected in total', (string) count($this->repo()->protectedUserIds()));
 
@@ -98,6 +99,31 @@ class Config extends Command
 			default:
 				return '';
 		}
+	}
+
+	/**
+	 * What the deprecated flat key is doing on this forum, which is the question an upgrade raises:
+	 * an install from before 2.2.0 still reads it, and one part-way through the rename has both set.
+	 * Where both are set and the current one names fewer ids, the difference is no longer protected
+	 * - archive:validate warns about that, and this says the count.
+	 */
+	protected function legacyKeyState(): string
+	{
+		if (ProtectedUsers::source() == ProtectedUsers::SOURCE_LEGACY)
+		{
+			return 'in use - this forum reads it' . self::FROM_CONFIG;
+		}
+
+		if (!ProtectedUsers::legacyIds())
+		{
+			return '';
+		}
+
+		$ignored = ProtectedUsers::ignoredLegacyIds();
+
+		return ($ignored
+			? 'also set, ' . count($ignored) . ' id(s) ignored - see archive:validate'
+			: 'also set, nothing ignored') . self::FROM_CONFIG;
 	}
 
 	/**

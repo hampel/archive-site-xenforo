@@ -48,6 +48,53 @@ class ProtectedUsers
 	}
 
 	/**
+	 * Ids in the deprecated flat key that the current key is discarding.
+	 *
+	 * **Both keys set is not an error and the precedence is deliberate** - get() takes the current
+	 * one, so an install can add it without editing two places at once. What earns a check is that
+	 * the discarding is silent and can be partial: a current key naming fewer ids than the
+	 * deprecated one leaves the difference unprotected, and an empty current key leaves every id in
+	 * the deprecated key unprotected. Nothing fails in either case, because every super admin stays
+	 * protected whatever config.php says - so no count reaches zero, both bulk commands run, and the
+	 * next archive run disables accounts somebody had listed.
+	 *
+	 * **An absent current key is not this case.** Settings::get() reads it with isset(), so
+	 * `$config['archiveSite'] = []` falls through to the deprecated key and protects exactly what it
+	 * did before. Measured 2026-10-10 rather than reasoned about, because a config.php generated
+	 * from a template is the likeliest place for an empty parent to appear.
+	 *
+	 * @return array ids that are no longer protected; empty when nothing is being discarded
+	 */
+	public static function ignoredLegacyIds()
+	{
+		if (self::source() != self::SOURCE_SETTINGS)
+		{
+			return [];
+		}
+
+		return array_values(array_diff(
+			array_map('intval', self::legacyIds()),
+			array_map('intval', self::get())
+		));
+	}
+
+	/**
+	 * The deprecated key's ids, normalised the way get() normalises the current one, and empty when
+	 * the key is not set at all.
+	 *
+	 * @return array
+	 */
+	public static function legacyIds()
+	{
+		$userids = self::legacyProtectedUsers();
+
+		if (!$userids) return [];
+		if (!is_array($userids)) return array($userids);
+
+		return $userids;
+	}
+
+	/**
 	 * The flat $config['archiveSiteProtectedUsers'] that 2.0.2 and earlier read. It still works,
 	 * so an install upgrading from one of those versions needs no change to config.php, but
 	 * $config['archiveSite']['protectedUsers'] overrides it wherever both are set.

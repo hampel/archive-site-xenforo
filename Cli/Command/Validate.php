@@ -3,6 +3,7 @@
 use Hampel\ArchiveSite\Cli\RendersReport;
 use Hampel\ArchiveSite\Config\AllowMail;
 use Hampel\ArchiveSite\Config\ProtectedUsers;
+use Hampel\ArchiveSite\Config\Settings;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -59,6 +60,7 @@ class Validate extends Command
 		$this->probe('archive table', function () { $this->archiveTable(); });
 
 		$this->checkSection('Protected users');
+		$this->probe('config keys', function () { $this->configKeys(); });
 		$this->probe('protected list', function () { $this->protectedList(); });
 		$this->probe('listed accounts', function () { $this->listedAccountsExist(); });
 
@@ -78,6 +80,57 @@ class Validate extends Command
 		$output->writeln('');
 
 		return $this->checkExitCode((bool) $input->getOption('strict'));
+	}
+
+	/**
+	 * Which config.php key the protected list came from, and whether the other one is being
+	 * discarded.
+	 *
+	 * **The warning is for a half-done migration**, which is silent and partial: ids in the
+	 * deprecated key that the current key does not name are no longer protected, every super admin
+	 * still is, so nothing fails and the next run disables accounts somebody had listed.
+	 * ProtectedUsers::ignoredLegacyIds() is the decision and says why.
+	 *
+	 * **Using the deprecated key is a skip, not a warning**, and the distinction is deliberate. A
+	 * forum reading the flat key is configured correctly - it still works and always will - so it
+	 * is reported for whoever is looking without being counted. A warning here would make
+	 * `--strict` exit 2 on every such forum until the key is renamed, which would make the flag
+	 * useless to a monitor on exactly the forums that have not migrated yet.
+	 */
+	protected function configKeys()
+	{
+		$ignored = ProtectedUsers::ignoredLegacyIds();
+
+		if ($ignored)
+		{
+			$this->checkWarn('config keys', sprintf(
+				"%d id(s) in the deprecated \$config['archiveSiteProtectedUsers'] are not in \$config['%s']['protectedUsers'], so they are no longer protected: %s",
+				count($ignored),
+				Settings::KEY,
+				implode(', ', $ignored)
+			));
+
+			return;
+		}
+
+		$current = "\$config['" . Settings::KEY . "']['protectedUsers']";
+
+		switch (ProtectedUsers::source())
+		{
+			case ProtectedUsers::SOURCE_SETTINGS:
+				$this->checkOk('config keys', ProtectedUsers::legacyIds()
+					? $current . ', and the deprecated key names nothing it does not'
+					: $current);
+				break;
+
+			case ProtectedUsers::SOURCE_LEGACY:
+				$this->checkSkip('config keys',
+					"only the deprecated \$config['archiveSiteProtectedUsers'] is set - it still works, and " . $current . ' replaces it');
+				break;
+
+			default:
+				$this->checkSkip('config keys', 'no protected list in config.php - super admins only');
+		}
 	}
 
 	/**

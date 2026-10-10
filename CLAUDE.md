@@ -109,6 +109,23 @@ abort on, and falling back would hide a deliberate one. `Settings::get()` also h
 hand-written `config.php` holding anything at all under that key, so it checks `is_array()` before
 reading.
 
+**A present-but-empty parent is absent, and that was measured rather than reasoned about.**
+`$config['archiveSite'] = []` holds no `protectedUsers`, and `Settings::get()` reads the key with
+`isset()`, so the deprecated key is read exactly as before. It matters because a `config.php`
+generated from a template is where an empty parent appears, and the two empty forms behave
+differently: `['protectedUsers' => []]` overrides and protects nobody from `config.php`, while `[]`
+falls through. Checked against the real classes on 2026-10-10 and asserted in
+`ProtectedUsersTest`, because a generated config now depends on the answer.
+
+**Where both keys are set, the newer one is the whole list, and the loss can be partial and
+silent.** An id named only in the deprecated key is no longer protected, and nothing fails: every
+super admin is protected whatever `config.php` says, so no count reaches zero, both bulk commands
+run, and the next archive run disables an account somebody had listed.
+`ProtectedUsers::ignoredLegacyIds()` is that decision in one place and `archive:validate` warns
+with the ids. **Note what this means for the empty-list guards above** — they fire on the *total*
+being empty, so on any forum that has a super admin they do not fire at all, and this check is the
+only thing that reports a half-done rename.
+
 Two consequences worth holding on to:
 
 - **The protected list is invisible to a fresh checkout.** `Admin CP > Users > Archive Site >
@@ -398,6 +415,12 @@ and the template modifications fail silently by design.
 - **`archive:validate` exercises it.** An empty protected list is a `[fail]`, because an archive
   run would then leave nobody able to log in and the ACP's own button does not guard against it.
   `allowMail` being on is a `[warn]`.
+- **A half-done `config.php` rename is a `[warn]`; using the deprecated key is a skip.** The
+  distinction is the design, not an accident of implementation: a forum reading the flat key is
+  configured correctly and always will be, so warning about it would make `--strict` exit 2 on
+  every forum that has not renamed it — which is precisely where a monitor still needs the flag
+  to mean something. A skip is reported for whoever is looking and never counted. Both directions
+  have a test that fails if they swap.
 - **It also reports how far the archiving has got, which is state rather than configuration.** An
   account that is neither archived nor protected can still log in, so archiving set up and not
   finished is a `[warn]` — *not started* where nothing has been archived, *incomplete* where some

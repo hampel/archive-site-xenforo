@@ -184,6 +184,71 @@ class ReportCommandsTest extends TestCase
 	}
 
 	/**
+	 * The warning the config-keys check exists for: a rename that named fewer ids than the key it
+	 * replaced, so the difference is no longer protected and nothing else on the forum says so.
+	 */
+	public function test_validate_warns_when_the_current_key_discards_deprecated_ids(): void
+	{
+		$this->mockFullyArchivedForum();
+		$this->setConfig('archiveSiteProtectedUsers', [5, 293]);
+		$this->setConfig('archiveSite', ['protectedUsers' => [5]]);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode(), 'a warning must not fail a gate');
+		$this->assertStringContainsString('[warn] config keys', $tester->getDisplay());
+		$this->assertStringContainsString('293', $tester->getDisplay());
+		$this->assertStringContainsString('no longer protected', $tester->getDisplay());
+	}
+
+	public function test_strict_turns_the_discarded_ids_warning_into_exit_2(): void
+	{
+		$this->mockFullyArchivedForum();
+		$this->setConfig('archiveSiteProtectedUsers', [5, 293]);
+		$this->setConfig('archiveSite', ['protectedUsers' => [5]]);
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(2, $tester->getStatusCode());
+		$this->assertStringContainsString('[warn] config keys', $tester->getDisplay());
+	}
+
+	/**
+	 * **A forum reading only the deprecated key is configured correctly, and must not warn.** The
+	 * key still works and always will, so the row is a skip: reported for whoever is looking,
+	 * never counted. A warning would make `--strict` exit 2 on every forum that has not renamed
+	 * the key, which would make the flag useless to a monitor on exactly those forums.
+	 */
+	public function test_validate_does_not_warn_about_the_deprecated_key_alone(): void
+	{
+		$this->mockFullyArchivedForum();
+		$this->setConfig('archiveSite', null);
+		$this->setConfig('archiveSiteProtectedUsers', [1]);
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
+		$this->assertStringContainsString('deprecated', $tester->getDisplay());
+		$this->assertStringNotContainsString('[warn] config keys', $tester->getDisplay());
+	}
+
+	/**
+	 * The keys agreeing is the state an install reaches part-way through a rename, and it is the
+	 * control for the warning above: same two keys set, nothing discarded, no warning.
+	 */
+	public function test_validate_is_quiet_when_both_keys_agree(): void
+	{
+		$this->mockFullyArchivedForum();
+		$this->setConfig('archiveSiteProtectedUsers', [1]);
+		$this->setConfig('archiveSite', ['protectedUsers' => [1]]);
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
+		$this->assertStringContainsString('[ ok ] config keys', $tester->getDisplay());
+	}
+
+	/**
 	 * An id in config.php that is not a user is a mistake somebody should know about, and nothing
 	 * else reports it - but it endangers nothing, so it must not fail a deploy gate.
 	 */
