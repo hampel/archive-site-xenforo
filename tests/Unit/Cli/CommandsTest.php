@@ -23,7 +23,9 @@ use Tests\TestCase;
  * runs it to completion rather than queueing it. So a confirmed archive-all archives every account
  * on the forum this suite is pointed at, and the surrounding transaction is no guard either: the
  * job manager ends the transaction on its own error paths, after which what follows is permanent.
- * That path belongs on a sandbox.
+ * That path belongs on a sandbox, and has been run on one: see TESTING.md's *Needs a sandbox
+ * and seeded content*, where 53 seeded members were archived and restored on their confirmed
+ * path on 2026-10-11. It stays out of this suite, which is pointed at a shared forum.
  *
  * Declining is what `['interactive' => false]` buys: the confirmation is a Symfony question with
  * no default, which a non-interactive run answers with null, and every command treats anything
