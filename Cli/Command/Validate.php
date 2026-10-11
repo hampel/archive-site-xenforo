@@ -30,6 +30,20 @@ class Validate extends Command
 {
 	use RendersReport;
 
+	/**
+	 * The unique keys a half-finished bulk run can be sitting under, and how to name each one.
+	 *
+	 * **The Admin CP and the CLI use different keys for the same job**, so neither can resume the
+	 * other's run and both rows can exist at once: `AbstractRebuildCommand` builds
+	 * `xfRebuildJob-<rebuild name>`, while `Admin\Controller\Archive` enqueues `archiveUsers`. The
+	 * Admin CP has no bulk restore, which is why there are three and not four.
+	 */
+	const BULK_JOB_KEYS = [
+		'archiveUsers' => 'the Admin CP archive run',
+		'xfRebuildJob-archive-all-users' => 'archive:archive-all-users',
+		'xfRebuildJob-restore-all-users' => 'archive:restore-all-users',
+	];
+
 	protected function configure()
 	{
 		$this
@@ -76,6 +90,7 @@ class Validate extends Command
 		$this->checkSection('Accounts');
 		$this->probe('guest messages', function () { $this->guestMessages(); });
 		$this->probe('account state', function () { $this->accountState(); });
+		$this->probe('pending run', function () { $this->pendingRun(); });
 
 		$output->writeln('');
 
@@ -392,6 +407,72 @@ class Validate extends Command
 		$partial
 			? $this->checkWarn('partially archived', $partial . ' account(s) have no password and no archive row, so cannot be restored')
 			: $this->checkOk('partially archived', 'none');
+	}
+
+	/**
+	 * Whether a bulk run is sitting in the job queue half-finished, which nothing else reports.
+	 *
+	 * **A stopped run is a row in `xf_job`, and it is not inert.** Both bulk commands enqueue
+	 * through `enqueueUnique()`, which defaults to `manual_execute = 1`, so the row is never picked
+	 * up by cron, by the automatic job runner on a web request, or by `xf:run-jobs`. What does reach
+	 * it is `--resume`, `xf:run-jobs --manual-only`, and - the one worth knowing - XenForo's own
+	 * notice on the Admin CP index and on Rebuild Caches, whose *continue running them* link runs
+	 * **every** pending manual job with no per-job confirmation and nothing naming what they are. So
+	 * a run abandoned because it went wrong is restarted by an administrator clearing what reads as
+	 * a stale cache rebuild.
+	 *
+	 * **The stored protected list is what makes a resume differ from a re-run**, and it is why this
+	 * row says how many ids it holds. A pass that finishes returns `resume()` carrying the data
+	 * `setupData()` resolved, list included, so any run that got through one pass has a snapshot;
+	 * `Job\ArchiveUsers::setupData()` fills the list only when it is empty, so a resume uses that
+	 * snapshot rather than the current `config.php`. Re-running the command instead is clean -
+	 * `_enqueue()` is an upsert with `execute_data = VALUES(execute_data)`, so it discards both the
+	 * stored list and the position.
+	 *
+	 * A warning and not a failure: the run can be finished, and the forum is not broken by the row
+	 * existing. It pairs with the archiving row above - incomplete with a pending run means resume
+	 * it, incomplete without one means start again.
+	 */
+	protected function pendingRun()
+	{
+		$db = \XF::db();
+
+		$rows = $db->fetchAll("
+			SELECT unique_key, execute_data
+			FROM xf_job
+			WHERE unique_key IN (" . $db->quote(array_keys(self::BULK_JOB_KEYS)) . ")
+			ORDER BY unique_key
+		");
+
+		if (!$rows)
+		{
+			$this->checkOk('pending run', 'none');
+
+			return;
+		}
+
+		foreach ($rows AS $row)
+		{
+			$data = unserialize($row['execute_data'], ['allowed_classes' => false]);
+			if (!is_array($data))
+			{
+				$data = [];
+			}
+
+			$start = isset($data['start']) ? (int) $data['start'] : 0;
+			$stored = isset($data['protectedUsers']) && is_array($data['protectedUsers'])
+				? count($data['protectedUsers'])
+				: 0;
+
+			$this->checkWarn('pending run', sprintf(
+				'%s pending %s - %s',
+				self::BULK_JOB_KEYS[$row['unique_key']],
+				$start ? 'at user ' . $start : 'at the start',
+				$stored
+					? sprintf('%d protected id(s) stored, which a resume uses in place of config.php', $stored)
+					: 'no protected list stored, so a resume reads config.php'
+			));
+		}
 	}
 
 	/**

@@ -449,4 +449,122 @@ class ReportCommandsTest extends TestCase
 		$this->assertSame(0, $tester->getStatusCode());
 		$this->assertStringContainsString('[warn] partially archived', $tester->getDisplay());
 	}
+
+	// ---- a bulk run left half-finished in the job queue ---------------------------------------
+
+	/**
+	 * A stopped bulk run, as a row in `xf_job`.
+	 *
+	 * **Raw SQL inside the transaction, so the row cannot outlive the test.** A real
+	 * `manual_execute` row naming this add-on's archive job on a shared development forum is not a
+	 * thing to create for real: XenForo would advertise it on the Admin CP index, and that notice's
+	 * link runs every pending manual job - which here would archive the lot.
+	 */
+	protected function enqueueStoppedRun(string $uniqueKey, array $data, string $class = 'Hampel\\ArchiveSite:ArchiveUsers'): void
+	{
+		$this->app()->db()->insert('xf_job', [
+			'unique_key' => $uniqueKey,
+			'execute_class' => $class,
+			'execute_data' => serialize($data),
+			'manual_execute' => 1,
+			'trigger_date' => \XF::$time,
+			'last_run_date' => \XF::$time,
+		]);
+	}
+
+	/**
+	 * The state the reporting session found: the first pass threw, so nothing was ever written back
+	 * and the row carries only the parameters the command enqueued. A resume therefore recomputes
+	 * the protected list, and the row says so.
+	 */
+	public function test_a_stopped_run_warns_and_says_no_list_was_stored(): void
+	{
+		$this->enqueueStoppedRun('xfRebuildJob-archive-all-users', ['batch' => 500, 'resume' => false]);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode(), 'a warning must not fail a gate');
+		$this->assertStringContainsString('[warn] pending run', $tester->getDisplay());
+		$this->assertStringContainsString('archive:archive-all-users pending at the start', $tester->getDisplay());
+		$this->assertStringContainsString('no protected list stored', $tester->getDisplay());
+	}
+
+	/**
+	 * The case a four-account sandbox cannot produce and a real forum always does: a pass finished,
+	 * so `resume()` wrote the whole of the job's data back - the resolved protected list included.
+	 * That snapshot is what `--resume` would archive by, rather than the current `config.php`, so
+	 * the count is the part of the row worth printing.
+	 */
+	public function test_a_stopped_run_that_stored_a_list_says_how_many_ids(): void
+	{
+		$this->enqueueStoppedRun('xfRebuildJob-archive-all-users', [
+			'batch' => 500,
+			'steps' => 1,
+			'start' => 42,
+			'protectedUsers' => [1, 999],
+		]);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('pending at user 42', $tester->getDisplay());
+		$this->assertStringContainsString('2 protected id(s) stored', $tester->getDisplay());
+	}
+
+	/**
+	 * The Admin CP button enqueues under its own key, so a row left by it is a different row from
+	 * the CLI's and has to be recognised separately - otherwise the one entry point an ordinary
+	 * administrator uses is the one this check cannot see.
+	 */
+	public function test_a_run_stopped_from_the_admin_cp_is_recognised_too(): void
+	{
+		$this->enqueueStoppedRun('archiveUsers', ['protectedUsers' => [1], 'start' => 7]);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('the Admin CP archive run pending at user 7', $tester->getDisplay());
+	}
+
+	public function test_a_stopped_restore_run_is_reported_as_well(): void
+	{
+		$this->enqueueStoppedRun(
+			'xfRebuildJob-restore-all-users',
+			['batch' => 500],
+			'Hampel\\ArchiveSite:RestoreUsers'
+		);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertStringContainsString('archive:restore-all-users pending', $tester->getDisplay());
+	}
+
+	/**
+	 * The forum is mocked as finished first, so the only thing left to warn about is the row - a
+	 * `--strict` run on the development forum exits 2 for its 2013 unarchived accounts whatever
+	 * this check does, and would pass while asserting nothing.
+	 */
+	public function test_strict_turns_a_stopped_run_into_exit_2(): void
+	{
+		$this->mockFullyArchivedForum();
+		$this->enqueueStoppedRun('xfRebuildJob-archive-all-users', ['batch' => 500]);
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(2, $tester->getStatusCode(), $tester->getDisplay());
+	}
+
+	/**
+	 * The control for the test above: the same finished forum with no row exits 0 under `--strict`,
+	 * which is what makes the 2 there attributable to the row.
+	 */
+	public function test_no_pending_run_is_reported_as_none(): void
+	{
+		$this->mockFullyArchivedForum();
+
+		$tester = $this->runConsoleCommand(Validate::class, ['--strict' => true]);
+
+		$this->assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
+		$this->assertStringContainsString('[ ok ] pending run', $tester->getDisplay());
+	}
 }
