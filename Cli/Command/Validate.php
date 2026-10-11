@@ -469,7 +469,7 @@ class Validate extends Command
 				self::BULK_JOB_KEYS[$row['unique_key']],
 				$start ? 'at user ' . $start : 'at the start',
 				$stored
-					? sprintf('%d protected id(s) stored, which a resume uses in place of config.php', $stored)
+					? sprintf('%d protected id(s) stored, which a resume archives by', $stored)
 					: 'no protected list stored, so a resume reads config.php'
 			));
 		}
