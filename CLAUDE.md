@@ -263,6 +263,49 @@ puts their `user_state` back from `xf_archivesite_user`, so archiving is reversi
 deleting their content would quietly make it one-way, and nothing in the restore path would say
 so.
 
+## A bulk run that stops stays in the job queue, and the Admin CP offers to finish it
+
+**Both bulk commands enqueue through `enqueueUnique()`, which defaults to `manual_execute = 1`**,
+so a run that stops leaves a row in `xf_job` that nothing automatic touches — not cron, not the
+job runner on a web request, and not `xf:run-jobs`, all of which select `manual_execute = 0`.
+Three things do reach it: `--resume`, `xf:run-jobs --manual-only`, and XenForo's own notice on the
+Admin CP index and on `Rebuild Caches`, whose *continue running them* link is `tools/run-job` with
+no `only` parameter and therefore **runs every pending manual job**, with no per-job confirmation
+and nothing naming what they are. So a run abandoned because it went wrong is restarted by an
+administrator clearing what reads as a stale cache rebuild.
+
+**The Admin CP and the CLI use different unique keys for the same job**, so neither can resume the
+other's run and both rows can exist at once. `AbstractRebuildCommand` builds
+`xfRebuildJob-archive-all-users`; `Admin\Controller\Archive` enqueues `archiveUsers`. There are
+three keys rather than four because the Admin CP has no bulk restore.
+
+**Whether the row carries a protected list is what decides where a resume gets its list from.**
+`AbstractRebuildJob::run()` ends in `resume()`, which carries the data `setupData()` resolved —
+the list included — and the manager writes that to `execute_data`. So any run that got through one
+pass holds a snapshot, and since `setupData()` fills the list only when it is empty, a resume
+archives by that snapshot rather than by the current `config.php`. **Re-running the command is the
+clean path**: `Manager::_enqueue()` is an upsert with `execute_data = VALUES(execute_data)`, so it
+discards the stored list and the stored position together.
+
+Measured on 2026-10-11 by constructing the job both ways without running it:
+
+```text
+as freshly enqueued by the CLI     protectedUsers=[1]      start=0
+as stored after one resume pass    protectedUsers=[1,999]  start=42
+```
+
+**A run that fails on its first pass stores nothing**, which is the case a small forum produces
+and a real one never does: the `manual_execute` branch of `Manager::runJobInternal()` updates only
+`trigger_date` and `last_run_date` before rethrowing, so `execute_data` is still what the command
+enqueued and a resume recomputes. Both forms exist in the wild and they behave differently, which
+is why `archive:validate`'s `pending run` row prints the stored count.
+
+**The snapshot is deliberate rather than a defect** — within one run the list should be stable,
+and `--resume` means resume *this* run — so nothing tries to correct it. What was missing is that
+a stopped run was invisible: the Admin CP notice names neither the add-on nor the job, and
+`validate` said nothing. Paired with the `archiving` row it is now the whole diagnosis —
+incomplete **with** a pending run means resume it, incomplete **without** one means start again.
+
 ## Installing this add-on stops mail to ordinary users
 
 **Both recipient setters are extended** — `setToUser()`, which is how XenForo addresses mail to a
@@ -428,6 +471,11 @@ and the template modifications fail silently by design.
   exists, since nothing can restore it. **A forum running only the guest-hiding half warns
   permanently, and that is correct**: the archiving half is switched on and doing nothing. It stays
   exit 0 without `--strict`, so it blocks no gate.
+- **A bulk run left half-finished in the job queue is a `[warn]` too**, naming the entry point and
+  whether the row stored a protected list — which is what decides resume against re-run. XenForo
+  does say a manual job is pending, on the Admin CP index, but it names neither the add-on nor the
+  job, and its link runs every pending manual job at once. See *A bulk run that stops stays in the
+  job queue* for the mechanism.
 - **Most of what `validate` reports is also somewhere in the control panel**, and that is not an
   argument against it: the point is an exit code for a forum nobody is looking at. Do not describe
   a check here as the only evidence of something without reading what core already shows — the

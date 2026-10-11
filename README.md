@@ -34,6 +34,13 @@ forum that set archiving up and never ran it, or whose run stopped part-way, get
 which of those it is. So does an account with no password and no archive row, which cannot be
 restored because nothing recorded what its state was.
 
+**And it reports a bulk run left half-finished**, which is what tells you which of those to do.
+A stopped `archive-all-users` or `restore-all-users` stays in XenForo's job queue as a manual job:
+nothing runs it automatically, but the Admin CP offers to continue it along with any other pending
+rebuild. **Resuming it archives by the protected list it recorded when it started**, while
+re-running the command reads `config.php` afresh — so the warning says which of the two a resume
+would use, and how many accounts that list holds.
+
 Its exit code is a contract:
 
 | | all fine | warnings only | any failure |
