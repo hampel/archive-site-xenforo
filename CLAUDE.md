@@ -82,6 +82,39 @@ One did, and was removed — the finder's own `total()` and `fetch()` agree whet
 admins leak, because the discrepancy users saw lived in the controller.
 
 
+## The forum's own `config.php` must not reach the suite, and clearing one key is not enough
+
+**`Tests\TestCase::setUp()` clears both `$config['archiveSite']` and the deprecated flat
+`$config['archiveSiteProtectedUsers']` before every test.** The suite runs against whatever forum
+it is pointed at, and both keys are things a real forum legitimately sets — so a test that does not
+set them has to mean *neither key is set*, and it cannot mean that while the forum decides.
+
+**Clearing one is not enough, and that asymmetry is the whole trap.** `ProtectedUsers::get()`
+prefers the nested key and reads the flat one only when the nested key is absent, so a test that
+sets the flat key alone is overridden by whatever the forum holds in the nested one. Nothing fails:
+both are valid configurations, and the override is the documented behaviour working as designed.
+
+**A development forum that sets neither key cannot show this**, which is why it survived four
+release cycles. The mutation check needs a forum whose `config.php` sets
+`$config['archiveSite']['protectedUsers']` — `TESTING.md` carries the command.
+
+Measured on 2026-10-11, in a sandbox seeded with 56 members and two config-protected ids:
+
+| the forum's `config.php` | the suite |
+|---|---|
+| sets the nested protected list | **9 failures**, every one a config-protected-user test |
+| sets neither key | 160 pass |
+| sets the nested list, with the `setUp()` clearing in place | 160 pass |
+
+**Two tests went on passing while proving nothing they were named for**, which is the half worth
+fearing. `test_nothing_is_protected_by_an_empty_list` asserted `isProtected(1)` is false while the
+forum's own list — not the empty one it set — was in effect, and would have *failed* on a forum
+whose list happens to contain user 1. And `LoginTest`'s protected-account-without-a-password test
+passed with its protection inert, because an unprotected passwordless account with no archive row
+takes core's path too: the behaviour it asserts is produced by the archive-row keying rather than
+by the protection it set up. **That one is still weaker than its name suggests** even with the
+config leak closed, and is the next thing to tighten there.
+
 ## Two unrelated features share one add-on
 
 Nothing connects these beyond both being needed when a forum stops taking new content, and a

@@ -243,14 +243,75 @@ echo "whatsnew:  $(echo "$out" | grep -c 'p-navgroup-link--whatsnew')"   # must 
 XenForo version the add-on declares support for — the second is what makes the declared floor
 evidence rather than assumption. Both are worth re-running whenever the floor moves.
 
+## Needs a sandbox and seeded content
+
+**Settled by a machine, but not by a machine pointed at the development forum.** Build the instance
+with `xenforo-addon-sandbox` mode 1 and add `Hampel/Seeder` from its release zip;
+`xenforo-addon-seeding` is the policy for both, and the short version is that a check which counts,
+times or archives anything needs a forum nothing else is writing to. Every figure below was
+measured on 2026-10-11, on XenForo 2.3.13 with PHP 8.3 and 56 seeded members.
+
+**The bulk commands' confirmed path, which cannot be run anywhere else.** Both commands run their
+job in the command's own process, so answering the confirmation on the development forum would
+archive every real account on it — which is why the suite covers only the declining path. Seed
+members, list two ids in `config.php`, and run both:
+
+```bash
+docker exec --user 1000:1000 <instance>-xf-1 php cmd.php seeder:run User \
+  -p users=40 -p access=5 --span=2y --batch=archive-bulk-run
+printf 'yes\n' | docker exec -i --user 1000:1000 <instance>-xf-1 php cmd.php archive:archive-all-users
+printf 'yes\n' | docker exec -i --user 1000:1000 <instance>-xf-1 php cmd.php archive:restore-all-users
+```
+
+What that proved, and each line is a thing the suite asserts only against a fixture: 53 unprotected
+accounts archived and the 3 protected ones untouched; `previous_state` recorded and restored
+exactly, the one `email_confirm` member included; the remember-me row cleared on archive and
+correctly **not** restored; and the count of distinct password hashes going from 2 to 55, which is
+53 freshly generated random passwords — *Archiving and restoring are not inverses*, at scale, on
+accounts a forum could really hold. `archive:validate` read *not started*, then *complete — 53
+archived, 3 protected, none left*, then *not started* again, and `--strict` exited **0** on the
+finished forum, which is the one state the development forum can never be in.
+
+**The suite against a forum that sets the protected list, which is the mutation check for the
+config isolation in `TestCase::setUp()`.** A development forum setting neither `config.php` key
+cannot show it: nine tests fail without that clearing and two more pass while asserting nothing.
+Add the key to the instance's `src/config.override.php` and run the suite both ways:
+
+```php
+$config['archiveSite']['protectedUsers'] = [29, 31];
+```
+
+```bash
+xf-cli compose run --rm --user 1000:1000 \
+  -w /var/www/html/src/addons/Hampel/ArchiveSite xf vendor/bin/phpunit --cache-directory /tmp/phpunit-cache
+```
+
+**Seed threads before judging a skip.** Three of the four tests that skip on a fresh instance say
+*needs a thread on the forum*, and one `seeder:run Thread -p threads=8 -p replies=4` turns all
+three into passes — 4 skips to 1, and 1,098 assertions to 1,174. The remaining skip is the gallery
+modification, which needs XFMG installed as well.
+
+**The suite is about twenty-five times faster here**, 13 seconds against five and a half minutes,
+because the partition test asserts against the forum's real population and this one has 56 accounts
+rather than two thousand. **So the assertion count is not a regression signal** — it tracks the
+forum, not the code.
+
+**Clean the batches by name, then check.** `seeder:list` should report nothing and the error log
+should be empty; a seeded batch left behind blocks Seeder's own uninstall, deliberately.
+
 ## Needs a human
 
 - **That a logged-in member still sees the rest of what guests do not.** The suite renders the
   latest-member widget, the not-open notice and the birthday for both, but not followers and
   following on a profile, the lock icon in a thread list, the forum home's page actions, or the
   What's New link for a member - the guest half of that one is the curl check above.
+  **This one has stopped needing a person and nobody has done it yet**: Seeder's
+  `following()`/`followedBy()` make a member with followers to render, and the sandbox skill's
+  *Acting as a member over HTTP* fetches a page as them. Both halves exist; the check does not.
 - **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
-  at all without it, so an install lacking XFMG proves nothing either way.
+  at all without it, so an install lacking XFMG proves nothing either way - and it is the one
+  test still skipping in a seeded sandbox. **Also reachable now and also unrun**: the sandbox
+  skill adds XFMG from the dist zips and Seeder's `Media` seeder fills it.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms
   `XF\Job\FileCleanUp`, and it runs from the job queue *after* the upgrade command returns, so an
   upgrade that reports success proves nothing about it. Run the queue, then check the add-on
@@ -258,4 +319,7 @@ evidence rather than assumption. Both are worth re-running whenever the floor mo
   release's `hashes.json` does not list, which on a working copy includes `.git` and both Claude
   files.
 - **Appearance and judgement** — whether the end message reads well in place, and whether the
-  archived forum looks coherent rather than merely stripped.
+  archived forum looks coherent rather than merely stripped. **This is the one that stays human,
+  and seeded content is what makes it answerable at all**: an empty sandbox looks stripped however
+  well the add-on behaves, so judge it on a forum with threads, members and a statistics widget
+  holding real numbers.
