@@ -123,7 +123,7 @@ What it covers, by class:
 | `Config\AllowMailTest` | the mail flag is off unless it is set truthy, whatever else the settings key holds |
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row, a passwordless member who is not shut (active), a shut passwordless account with no archive row (partially archived) and an archived account that has a password (archived); archiving and restoring change exactly what they should, refuse protected users and super admins, leave an account that never had a password without one, and touch nothing on an account nobody archived |
 | `Admin\Controller\ArchiveTest` | each page's total agrees with its finder and its rows are one page of it; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin reaches none of it |
-| `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back. A run with nothing protected archives nobody, logs the refusal and completes - where it used to fail on a malformed `NOT IN ()` |
+| `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back - with a password where there was one and **without** where there was not, which is what `previous_scheme_class` records. A run with nothing protected archives nobody, logs the refusal and completes - where it used to fail on a malformed `NOT IN ()` |
 | `TemplateModificationsTest` | every modification applies, read from the forum rather than a list, so a new one is covered automatically |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused by either setter, and to a super admin or protected user is not; an address no account holds is allowed; an address shared with an unmailable account is refused; a blocked member is recorded once, not twice; `allowMail` lets the same member through by either route, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
@@ -285,6 +285,37 @@ $config['archiveSite']['protectedUsers'] = [29, 31];
 xf-cli compose run --rm --user 1000:1000 \
   -w /var/www/html/src/addons/Hampel/ArchiveSite xf vendor/bin/phpunit --cache-directory /tmp/phpunit-cache
 ```
+
+**Seed the three states this add-on has historically mishandled**, which need Seeder 1.0.0a3 or
+later - a2 silently ignores the parameters:
+
+```bash
+docker exec --user 1000:1000 <instance>-xf-1 php cmd.php seeder:run User \
+  -p users=20 -p access=5 -p moderated=3 -p passwordless=3 -p no_auth=2 --batch=archive-states
+```
+
+That gives members awaiting approval with real `xf_approval_queue` rows, members on
+`XF:NoPassword` as core creates them for a connected-account registration, and members with no
+`xf_user_authenticate` row at all. Each has cost this add-on a defect, and each had only ever been
+tested against a fixture written by hand. Config-protect one of the awkward ones, so protection is
+exercised on them too. Taking all three through both bulk commands on 2026-10-12 found the add-on
+correct on every point:
+
+- **an account with no authentication row no longer stops the run** - the 2.0.2 regression - and
+  is archived with an empty `previous_scheme_class`, since there was no scheme to record;
+- **a passwordless account comes back passwordless.** It is archived with
+  `previous_scheme_class` = `XF:NoPassword` and restored without being given a password it never
+  had, which is the 2.2.0 fix holding through a real bulk run;
+- **a member awaiting approval comes back awaiting approval**, and the `xf_approval_queue` row
+  deleted by archiving is re-created - 3 rows, to 0, to 3.
+
+All eight special accounts were compared **individually** before and after, not by aggregate count:
+matching totals do not prove that each account round-tripped. The error log stayed empty
+throughout.
+
+**That run also found a test asserting the wrong thing**, which is the reason to do it on a forum
+holding the population rather than a forum that happens to lack it - see `CLAUDE.md`, *The forum's
+own `config.php` must not reach the suite*.
 
 **Seed threads before judging a skip.** Three of the four tests that skip on a fresh instance say
 *needs a thread on the forum*, and one `seeder:run Thread -p threads=8 -p replies=4` turns all

@@ -106,6 +106,15 @@ Measured on 2026-10-11, in a sandbox seeded with 56 members and two config-prote
 | sets neither key | 160 pass |
 | sets the nested list, with the `setUp()` clearing in place | 160 pass |
 
+**And `config.php` is only half of it: the forum's population is the other half.** On a forum
+holding real `XF:NoPassword` members, `Job\ArchiveUsersTest`'s restore test failed with *user 32
+still has no password* - because it asserted, for every restored account, that a password had come
+back. An account that was passwordless before archiving correctly returns passwordless, which is
+what `previous_scheme_class` is for, so the add-on was right and the test was wrong. It now
+asserts both populations separately, and the passwordless half is the stronger assertion: it fails
+if the 2.2.0 fix is reverted, which the job tests never checked before - only the repository tests
+did, against a fixture. Measured 2026-10-12.
+
 **Two tests went on passing while proving nothing they were named for**, which is the half worth
 fearing. `test_nothing_is_protected_by_an_empty_list` asserted `isProtected(1)` is false while the
 forum's own list — not the empty one it set — was in effect, and would have *failed* on a forum
