@@ -174,7 +174,19 @@ class ArchiveUsersTest extends TestCase
 
 			$this->assertSame($before[$id]['user_state'], $after[$id]['user_state'], "user $id state was not restored");
 			$this->assertNull($after[$id]['previous_state'], "user $id still has an archive row");
-			$this->assertNotSame('XF:NoPassword', $after[$id]['scheme_class'], "user $id still has no password");
+
+			// Whether a password comes back depends on whether there was one, which is what
+			// previous_scheme_class records - so the two populations are asserted separately. The
+			// second half is the 2.2.0 fix: a connected-account member used to be restored with a
+			// real password they never had, reachable by lost-password where before they were not.
+			if ($before[$id]['scheme_class'] === 'XF:NoPassword')
+			{
+				$this->assertSame('XF:NoPassword', $after[$id]['scheme_class'], "user $id was given a password it never had");
+			}
+			else if ($before[$id]['scheme_class'] !== null)
+			{
+				$this->assertNotSame('XF:NoPassword', $after[$id]['scheme_class'], "user $id still has no password");
+			}
 		}
 		$this->assertDatabaseCount('xf_archivesite_user', 0);
 	}
