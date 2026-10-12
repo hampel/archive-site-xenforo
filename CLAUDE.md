@@ -96,7 +96,16 @@ both are valid configurations, and the override is the documented behaviour work
 
 **A development forum that sets neither key cannot show this**, which is why it survived four
 release cycles. The mutation check needs a forum whose `config.php` sets
-`$config['archiveSite']['protectedUsers']` — `TESTING.md` carries the command.
+`$config['archiveSite']['protectedUsers']` — `TESTING.md` carries the command for building one.
+
+**A development forum may well set them, though, in which case the clearing is load-bearing there
+rather than a precaution for somebody else's install — and the suite passing on it *is* the
+mutation check.** Measured on 2026-10-12, on a development forum holding three config-protected
+ids with `allowMail` on, by removing the nested clearing and running three classes: six
+`Config\ProtectedUsersTest` tests fail, and **five `MailTest` tests fail that could not have
+failed before `allowMail` was set anywhere** — including both directions, because the flag test
+asserts the refusal as a control before switching the flag on. `Config\AllowMailTest` fails none:
+every one of its cases sets the key itself, which is what immunity to the forum looks like.
 
 Measured on 2026-10-11, in a sandbox seeded with 56 members and two config-protected ids:
 

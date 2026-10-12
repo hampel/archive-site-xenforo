@@ -275,6 +275,9 @@ finished forum, which is the one state the development forum can never be in.
 **The suite against a forum that sets the protected list, which is the mutation check for the
 config isolation in `TestCase::setUp()`.** A development forum setting neither `config.php` key
 cannot show it: nine tests fail without that clearing and two more pass while asserting nothing.
+**A forum that already sets the keys does just as well**, and a development install often will -
+in which case it is itself the check and no sandbox need be built for this one. What the check
+needs is a configured forum, not a disposable one.
 Add the key to the instance's `src/config.override.php` and run the suite both ways:
 
 ```php
