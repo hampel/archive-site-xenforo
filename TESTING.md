@@ -317,9 +317,17 @@ throughout.
 holding the population rather than a forum that happens to lack it - see `CLAUDE.md`, *The forum's
 own `config.php` must not reach the suite*.
 
-**Check that the credentials went, because `-p access=5` already seeds the accounts that hold
-them.** The `User` seeder's access cycle gives one member two-step verification and one a passkey,
-so the bulk-run recipe above needs nothing added - only these counts, before and after:
+**Check that the credentials went, because the access cycle already seeds the accounts that hold
+them.** `-p access=15` gives three members each with a connected account, two-step verification, a
+passkey, a "stay logged in" key and a pending email confirmation - three of each rather than one,
+so that no result rests on a single account:
+
+```bash
+docker exec --user 1000:1000 <instance>-xf-1 php cmd.php seeder:run User \
+  -p users=15 -p access=15 --span=2y --batch=archive-credentials
+```
+
+Then these counts, before archiving and after:
 
 ```sql
 SELECT (SELECT COUNT(*) FROM xf_user_tfa)                           AS two_step_rows,
@@ -328,13 +336,28 @@ SELECT (SELECT COUNT(*) FROM xf_user_tfa)                           AS two_step_
        (SELECT COUNT(*) FROM xf_user_option WHERE use_tfa = 1)      AS flagged;
 ```
 
-**This is the one check in this section that has a recorded wrong answer to compare against.** The
-2026-10-11 run measured `xf_user_tfa` at 4 and `xf_passkey` at 1 **unchanged** across an archive of
-53 accounts, which is what prompted clearing them. All four counts should now reach 0 for every
-archived account, and a restore must leave them at 0 - see `CLAUDE.md`, *Credentials are the
-exception, and clearing them is one way*. **Not yet run**: the suite asserts all of it against rows
-built through XenForo's own repositories, but nobody has taken Seeder's own two-step and passkey
-members through the bulk commands.
+**Protect a credential holder, not just any account.** A protected account is one that still has
+to be able to log in, so an archive run must leave *its* two-step and passkeys alone - that
+negative matters as much as the clearing, and it is the only thing the counts above cannot show on
+their own. Listing a two-step member and a passkey member in `config.php` makes every "after"
+figure land on exactly their holdings, which is what the run below measured: 12 two-step rows to 4,
+3 passkeys to 1, 3 trusted devices to 1, `use_tfa` on 6 accounts to 2.
+
+**Two things the seeder does not give you.** It makes no trusted devices, so create some through
+core's `XF:UserTfaTrusted::createTrustedKey()`; and a passkey holder arrives with **two** two-step
+rows, `backup,passkey`, because `withPasskey()` goes through `enableUserTfaProvider()` and core adds
+backup codes beside any provider.
+
+**Then do what a forum archived by an earlier version has to do**, which no other check covers:
+archive, give one archived account a two-step provider back through core's repository, and run
+`archive:archive-all-users` again. The rows must go **and** that account's `previous_state` must
+still read what it was before the first run - `valid`, not the `disabled` it now is - with no
+second archive row. Measured 2026-10-12: it does, and a restore afterwards put the account back to
+`valid`. **That is what makes *run the command again* safe advice** for a forum already archived.
+
+All of it ran on 2026-10-12 with 30 seeded members, both bulk commands exit 0, every account
+compared individually before and after, and `xf_error_log` at 0 throughout. See `CLAUDE.md`,
+*Credentials are the exception, and clearing them is one way*.
 
 **Seed threads before judging a skip.** Three of the four tests that skip on a fresh instance say
 *needs a thread on the forum*, and one `seeder:run Thread -p threads=8 -p replies=4` turns all

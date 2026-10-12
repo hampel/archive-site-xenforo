@@ -347,6 +347,13 @@ the forum did. Two of the add-on's own admin phrases already promised that an ar
 cannot log in "using any authentication mechanism (passwords, connected accounts, passkeys, etc)",
 which the code did not do until this was added.
 
+**A protected account keeps all of it, and that is not an oversight.** `clearCredentials()` sits
+below `archiveUser()`'s protection check, so a super admin or a config-listed id is never reached
+- which is right, because a protected account is precisely the one that still has to be able to
+log in. Taking a protected administrator's passkey away would be the opposite of what the list is
+for. Worth asserting deliberately when testing this: list a two-step holder and a passkey holder
+in `config.php`, and every count afterwards should land on exactly their holdings.
+
 **A forum archived by an earlier version still holds all of it, and the fix is to run the command
 again rather than an upgrade step.** `Job\ArchiveUsers::getNextIds()` walks every row in `xf_user`
 rather than only the unarchived ones, so `archive:archive-all-users` reaches an account that is
@@ -355,19 +362,25 @@ second archive row. **That last part is what makes the advice safe**: `previous_
 only when there is no row, so a re-run cannot overwrite a `valid` with the `disabled` the account
 now is, which would turn every later restore into a no-op.
 `test_archiving_an_already_archived_account_clears_credentials_and_keeps_its_record` is that
-assertion, with the state set explicitly because a borrowed account can be `disabled` to begin with.
+assertion, and it was then run for real in the sandbox - an account archived, given a provider
+back, and archived again came out with its `previous_state` still `valid`, no second archive row,
+and restored to `valid` afterwards.
 
 **Connected accounts are the one credential left in place**, and that is open rather than settled:
 `xf_user_connected_account` survives an archive run, so a Google or Facebook login still
 authenticates and meets the same generic page. Removing them is a larger decision than it looks,
 because such an account is usually passwordless, so a restore that has nothing to reset leaves an
-owner with no route back in at all.
+owner with no route back in at all. Confirmed by measurement rather than by reading:
+`xf_user_connected_account` stayed at 3 across two archive runs of a seeded sandbox on 2026-10-12.
 
 **A development forum is likely to hold no two-step rows and no passkeys at all**, and this one
 holds none — all four tables at 0, measured on 2026-10-12. So the tests build their fixtures
 through XenForo's own repositories inside the transaction, and the same warning applies as to the
-config keys above: a development forum cannot show you what it does not have. A seeded sandbox can
-— Seeder's `withTwoStep()` and `withPasskey()` make both.
+config keys above: a development forum cannot show you what it does not have. A seeded sandbox
+can, and did: 30 seeded members on 2026-10-12 took the twelve two-step rows, three trusted devices
+and three passkeys they held down to **exactly the two protected accounts' holdings**, through
+both bulk commands, with the error log at 0. `TESTING.md`'s *Needs a sandbox and seeded content*
+carries the recipe.
 
 **The passkey half is guarded on `\XF::$versionId >= 2030000` and must stay guarded.** The table,
 the entity and the repository are all new in XF 2.3, and this add-on's floor is 2.2, where
