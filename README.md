@@ -53,6 +53,19 @@ wants to hear about one. **1 always means failed** — this is not the monitorin
 where 1 is a warning. `--unattended` is accepted and does nothing, since neither command writes or
 sends anything; it is there so that one command line works across add-ons.
 
+## Archiving an account
+
+Archiving disables the account and removes every way of logging in to it: the password, the "stay
+logged in" records, any passkeys, and two-step verification along with its trusted devices. Posts,
+conversations, attachments, profile fields and personal details are all left alone — this stops a
+forum being used, and is not a data-erasure tool.
+
+**Restoring an account is possible but it is not an undo.** The previous user state is recorded and
+put back, and an account that had a password is given a new random one, so its owner has to go
+through a password reset to get in. Nothing records the credentials themselves, because nothing
+could put them back, so **an owner whose account is restored sets up two-step and any passkeys
+again from scratch**. Archiving is meant to be one way; restoring is for the exceptional case.
+
 ## Configuration
 
 Two settings live in the install's `src/config.php` rather than in the admin control panel, because

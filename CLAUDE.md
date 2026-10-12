@@ -216,12 +216,13 @@ declared nor listed as deliberately not one.
 
 ## Archiving and restoring are not inverses
 
-`archiveUser()` clears the user's remember-me records, sets their auth to `XF:NoPassword`, records
-their `user_state` **and their authentication scheme** in `xf_archivesite_user`, then sets the
-state to `disabled`. `restoreUser()` puts the recorded state back and deletes the row — and where
-the account had a password, it calls `Auth::resetPassword()`, which generates a random one rather
-than returning the old. **A restored user cannot log in until they complete a password reset**, and
-that is the design, not an oversight: the original hash is gone the moment the account is archived.
+`archiveUser()` clears every credential the account has — remember-me records, passkeys and
+two-step — sets their auth to `XF:NoPassword`, records their `user_state` **and their
+authentication scheme** in `xf_archivesite_user`, then sets the state to `disabled`.
+`restoreUser()` puts the recorded state back and deletes the row — and where the account had a
+password, it calls `Auth::resetPassword()`, which generates a random one rather than returning the
+old. **A restored user cannot log in until they complete a password reset**, and that is the
+design, not an oversight: the original hash is gone the moment the account is archived.
 
 **An account that never had a password is left without one.** That is what
 `previous_scheme_class` is for, and the question is asked through XenForo's own
@@ -280,10 +281,10 @@ recorded what their `user_state` used to be.
 
 ## Archiving disables, it does not erase
 
-**An archived account keeps everything it had.** `archiveUser()` clears remember-me records, sets
-the auth to `XF:NoPassword`, records the previous `user_state` and sets the state to `disabled`.
-Posts, conversations, attachments, date of birth, location and profile fields are all untouched,
-and that is deliberate — the add-on exists to stop a forum being *used*, not to scrub it.
+**An archived account keeps everything it wrote, and nothing it logged in with.** Posts,
+conversations, attachments, date of birth, location and profile fields are all untouched, and that
+is deliberate — the add-on exists to stop a forum being *used*, not to scrub it. The credentials
+go, which is the section below.
 
 Worth stating plainly because the name invites the other reading: **this is not a data-erasure
 tool**, and an administrator reaching for it to satisfy a deletion request will not get one.
@@ -300,10 +301,78 @@ decision someone may want to revisit:
 - clean up archived users' profiles more generally
 - physically remove soft-deleted threads, posts, attachments and photos
 
-**Anything on that list that deletes content needs more thought than it looks.** Restoring a user
-puts their `user_state` back from `xf_archivesite_user`, so archiving is reversible by design;
-deleting their content would quietly make it one-way, and nothing in the restore path would say
-so.
+**Anything on that list that deletes content needs more thought than it looks, and the credential
+clearing below is not the precedent for it.** Archiving is one way by intention and restoring is
+the exceptional case (Simon, 2026-10-12), so "it would make archiving irreversible" is no longer
+the objection it was. The line that remains is what the row is *for*: a credential has no value to
+an archived forum and cannot be put back whether or not anyone tries, whereas the content is the
+thing the forum is being kept for, and `restoreUser()` quietly promises to return an account to
+what it was. Deleting a member's conversations or bookmarks breaks that promise in a way nothing in
+the restore path would say.
+
+## Credentials are the exception, and clearing them is one way
+
+**`archiveUser()` deletes every way into the account: remember-me records, passkeys, two-step
+provider rows and trusted devices, on top of replacing the password with `XF:NoPassword`.** Nothing
+about them is recorded and nothing restores them. That is the asymmetry with `previous_state` and
+`previous_scheme_class`, and it is deliberate on two grounds — an archived forum should stop
+carrying the rows that let somebody into it, and there is nothing restorable in a credential
+anyway: the secret behind a two-step provider or a passkey cannot be written back any more than a
+password hash can. A restored owner sets both up again, which is the position they are already in
+over their password.
+
+`Repository\ArchiveUsers::clearCredentials()` is the whole of it, and it is three decisions:
+
+| | |
+|---|---|
+| passkeys | deleted one entity at a time, so a sibling add-on with data hanging off a passkey is told it has gone. Core offers no bulk method |
+| two-step | `XF:Tfa`'s own `disableTfaForUser()` — the method the account security page calls. Provider rows, trusted devices and the `use_tfa` flag, in one place |
+| `xf_tfa_attempt` | left alone. It is rate limiting rather than anything the account owns, and XenForo's cron deletes every row over a day old |
+
+**The order is load-bearing and `user_option.use_tfa` is why.** XenForo maintains a `passkey`
+two-step provider row beside the passkeys themselves, so the passkeys go first and the entity's own
+`_postDelete()` retires that row; `disableTfaForUser()` then clears what is left **and puts
+`use_tfa` back to 0**. A `use_tfa` flag with no provider rows behind it asks for a code nothing can
+issue, which would lock a restored owner out of the account they had just been given back — so
+every one of these tests asserts the flag as well as the rows, and a mutation that deletes the rows
+with raw SQL instead fails all three.
+
+**Passkeys are the half that closes a real gap rather than saving space.** A passkey authenticates
+through `LoginController::actionPasskey()`, which goes to `Passkey\ManagerService` and
+`LoginPlugin::completeLogin()` and **never reaches the `Login::validate()` this add-on replaces**.
+Access was still refused — XenForo turns a disabled account away at
+`XF\Pub\Controller\AbstractController:221` — but with core's generic disabled page instead of
+this add-on's *site is archived* message, and the credential stayed in the database for as long as
+the forum did. Two of the add-on's own admin phrases already promised that an archived account
+cannot log in "using any authentication mechanism (passwords, connected accounts, passkeys, etc)",
+which the code did not do until this was added.
+
+**A forum archived by an earlier version still holds all of it, and the fix is to run the command
+again rather than an upgrade step.** `Job\ArchiveUsers::getNextIds()` walks every row in `xf_user`
+rather than only the unarchived ones, so `archive:archive-all-users` reaches an account that is
+already archived, and `archiveUser()` on one of those clears the credentials while creating no
+second archive row. **That last part is what makes the advice safe**: `previous_state` is recorded
+only when there is no row, so a re-run cannot overwrite a `valid` with the `disabled` the account
+now is, which would turn every later restore into a no-op.
+`test_archiving_an_already_archived_account_clears_credentials_and_keeps_its_record` is that
+assertion, with the state set explicitly because a borrowed account can be `disabled` to begin with.
+
+**Connected accounts are the one credential left in place**, and that is open rather than settled:
+`xf_user_connected_account` survives an archive run, so a Google or Facebook login still
+authenticates and meets the same generic page. Removing them is a larger decision than it looks,
+because such an account is usually passwordless, so a restore that has nothing to reset leaves an
+owner with no route back in at all.
+
+**A development forum is likely to hold no two-step rows and no passkeys at all**, and this one
+holds none — all four tables at 0, measured on 2026-10-12. So the tests build their fixtures
+through XenForo's own repositories inside the transaction, and the same warning applies as to the
+config keys above: a development forum cannot show you what it does not have. A seeded sandbox can
+— Seeder's `withTwoStep()` and `withPasskey()` make both.
+
+**The passkey half is guarded on `\XF::$versionId >= 2030000` and must stay guarded.** The table,
+the entity and the repository are all new in XF 2.3, and this add-on's floor is 2.2, where
+resolving any of them is a fatal part-way through an archive run rather than an empty result. The
+two-step half needs no guard: `disableTfaForUser()` has the same name and body in both versions.
 
 ## A bulk run that stops stays in the job queue, and the Admin CP offers to finish it
 
