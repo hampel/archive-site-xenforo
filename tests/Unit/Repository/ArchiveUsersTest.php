@@ -551,7 +551,7 @@ class ArchiveUsersTest extends TestCase
 	 * asked for, the backup codes core adds beside it, and `user_option.use_tfa`. A trusted device
 	 * is added as well, since that is a third table and the one nothing else would notice.
 	 */
-	protected function anAccountWithTwoStep(): User
+	protected function giveTwoStep(User $user): void
 	{
 		$provider = $this->app()->em()->find('XF:TfaProvider', 'totp');
 		if (!$provider)
@@ -559,10 +559,15 @@ class ArchiveUsersTest extends TestCase
 			$this->markTestSkipped('needs the totp two-step provider on the forum');
 		}
 
-		$user = $this->anActiveUser();
-
 		$this->app()->repository('XF:Tfa')
 			->enableUserTfaProvider($user, $provider, ['secret' => str_repeat('a', 16)]);
+	}
+
+	protected function anAccountWithTwoStep(): User
+	{
+		$user = $this->anActiveUser();
+
+		$this->giveTwoStep($user);
 
 		$this->app()->db()->insert('xf_user_tfa_trusted', [
 			'user_id' => $user->user_id,
@@ -699,5 +704,25 @@ class ArchiveUsersTest extends TestCase
 			'user_id' => $user->user_id,
 			'previous_state' => $previousState,
 		]);
+	}
+
+	/**
+	 * **A protected account keeps all of it, and that is the point of the list.** It is the one
+	 * account that still has to be able to log in, so taking an administrator's passkey or
+	 * two-step away would be the opposite of what protection is for.
+	 *
+	 * `clearCredentials()` is below `archiveUser()`'s protection check, so this holds structurally
+	 * - which is exactly why it is worth a test: an edit that moved the call above that check
+	 * would lock an administrator out of a forum nobody else can get into either.
+	 */
+	public function test_archiving_leaves_a_protected_accounts_two_step_alone(): void
+	{
+		$admin = $this->aSuperAdmin();
+		$this->giveTwoStep($admin);
+
+		$this->assertFalse($this->repo()->archiveUser($admin));
+
+		$this->assertDatabaseHas('xf_user_tfa', ['user_id' => $admin->user_id, 'provider_id' => 'totp']);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $admin->user_id, 'use_tfa' => 1]);
 	}
 }
