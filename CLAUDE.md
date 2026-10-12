@@ -393,8 +393,12 @@ carries the recipe.
 
 **The passkey half is guarded on `\XF::$versionId >= 2030000` and must stay guarded.** The table,
 the entity and the repository are all new in XF 2.3, and this add-on's floor is 2.2, where
-resolving any of them is a fatal part-way through an archive run rather than an empty result. The
-two-step half needs no guard: `disableTfaForUser()` has the same name and body in both versions.
+resolving any of them is a fatal part-way through an archive run rather than an empty result.
+The two-step half needs no guard: `disableTfaForUser()` has the same name and body in both
+versions — which was read off the two sources side by side until 2.2.3, when a two-step holder was
+archived on a real XF 2.2.19 install and came out with its provider rows, its trusted device and
+its `use_tfa` flag all cleared and nothing logged. `xf_passkey` does not exist there, so the same
+run is the guard earning its place rather than a precaution.
 
 ## A bulk run that stops stays in the job queue, and the Admin CP offers to finish it
 

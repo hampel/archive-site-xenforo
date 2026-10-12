@@ -263,6 +263,18 @@ printf 'yes\n' | docker exec -i --user 1000:1000 <instance>-xf-1 php cmd.php arc
 printf 'yes\n' | docker exec -i --user 1000:1000 <instance>-xf-1 php cmd.php archive:restore-all-users
 ```
 
+**On the XF 2.2 floor that pipe silently declines, and the command is not at fault.** XenForo 2.2
+bundles a Symfony Console whose `Application::configureIO()` turns interactivity **off** when stdin
+is not a TTY unless `SHELL_INTERACTIVE` is set, so the question returns its default and the command
+prints *Aborting* and exits 0 - which reads exactly like a confirmation declined on purpose. Add
+`-e SHELL_INTERACTIVE=1` to the `docker exec` and the same pipe works. XF 2.3's newer console has
+no such check, so this only ever bites on the floor, and an administrator typing at a terminal has
+a TTY and is unaffected.
+
+**Read a command's exit code without a pipe in the way.** `$?` after `cmd | tail -1` is `tail`'s,
+so every code comes back 0 and the refusals look like successes. Capture the output into a variable
+and read `$?` from that.
+
 What that proved, and each line is a thing the suite asserts only against a fixture: 53 unprotected
 accounts archived and the 3 protected ones untouched; `previous_state` recorded and restored
 exactly, the one `email_confirm` member included; the remember-me row cleared on archive and
