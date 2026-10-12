@@ -1,6 +1,28 @@
 CHANGELOG
 =========
 
+2.2.3 (2026-10-12)
+------------------
+
+* archiving an account now removes its passkeys, its two-step verification and its trusted
+  devices, along with the password and the "stay logged in" records it already removed. An
+  archived site keeps nothing that could log in to it. Restoring an account does not put them
+  back - the owner sets two-step up again, as they do their password
+* a member who logged in with a passkey was refused access to an archived site, but saw XenForo's
+  generic account-disabled page rather than the site's own archived message, because a passkey
+  login does not go through the login service this add-on extends. There is no longer a passkey
+  to log in with
+* a site archived by an earlier version still holds those records for every account it archived.
+  Running `archive:archive-all-users` again removes them - the run reaches accounts that are
+  already archived, and leaves what it recorded about them alone, so they can still be restored
+  afterwards
+* `archive:validate` now reports a bulk run left half-finished in XenForo's job queue, saying
+  which command or screen started it, where it stopped, and whether it recorded a list of
+  protected accounts - because resuming such a run archives by the list it recorded when it
+  started, while running the command again reads `config.php` afresh. Nothing else names these:
+  XenForo reports that some manual job is pending, without saying which add-on it belongs to or
+  what finishing it would do
+
 2.2.2 (2026-10-10)
 ------------------
 
