@@ -542,4 +542,162 @@ class ArchiveUsersTest extends TestCase
 
 		$this->assertFalse($this->repo()->restoreUser($admin));
 	}
+
+	// ---- passkeys and two-step ------------------------------------------------------------------
+
+	/**
+	 * An account set up with two-step through XenForo's own repository rather than by inserting
+	 * rows, so that what archiving clears is what the account security page creates: the provider
+	 * asked for, the backup codes core adds beside it, and `user_option.use_tfa`. A trusted device
+	 * is added as well, since that is a third table and the one nothing else would notice.
+	 */
+	protected function anAccountWithTwoStep(): User
+	{
+		$provider = $this->app()->em()->find('XF:TfaProvider', 'totp');
+		if (!$provider)
+		{
+			$this->markTestSkipped('needs the totp two-step provider on the forum');
+		}
+
+		$user = $this->anActiveUser();
+
+		$this->app()->repository('XF:Tfa')
+			->enableUserTfaProvider($user, $provider, ['secret' => str_repeat('a', 16)]);
+
+		$this->app()->db()->insert('xf_user_tfa_trusted', [
+			'user_id' => $user->user_id,
+			'trusted_key' => str_repeat('b', 32),
+			'trusted_until' => \XF::$time + 86400,
+		]);
+
+		// the fixture is worth asserting: a test that clears nothing passes just as well
+		$this->assertDatabaseHas('xf_user_tfa', ['user_id' => $user->user_id, 'provider_id' => 'totp']);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $user->user_id, 'use_tfa' => 1]);
+
+		return $user;
+	}
+
+	/**
+	 * A passkey has to be inserted: creating a real one is a WebAuthn ceremony with a device at
+	 * the other end of it. The two-step provider row that XenForo maintains alongside a passkey is
+	 * then built by core's own repository, which is the state a real passkey holder is in.
+	 */
+	protected function aPasskeyHolder(): User
+	{
+		$user = $this->anActiveUser();
+
+		$this->app()->db()->insert('xf_passkey', [
+			'credential_id' => str_repeat('c', 64),
+			'credential_public_key' => str_repeat('d', 64),
+			'user_id' => $user->user_id,
+			'name' => 'test passkey',
+			'aaguid' => '',
+		]);
+		$this->app()->em()->clearEntityCache();
+
+		$user = $this->reload($user->user_id);
+		$this->app()->repository('XF:Passkey')->updateUserPasskeyProvider($user);
+
+		$this->assertDatabaseHas('xf_user_tfa', ['user_id' => $user->user_id, 'provider_id' => 'passkey']);
+
+		return $user;
+	}
+
+	/**
+	 * Archiving leaves no second factor behind - not the provider rows, not the trusted devices,
+	 * and not the `use_tfa` flag that indexes them.
+	 *
+	 * **The flag is the half that would hurt.** Set with no provider rows behind it, it asks for a
+	 * code nothing can issue, so an owner whose account was restored could not get in to set
+	 * two-step up again.
+	 */
+	public function test_archiving_clears_every_two_step_record(): void
+	{
+		$user = $this->anAccountWithTwoStep();
+
+		$this->repo()->archiveUser($user);
+
+		$this->assertDatabaseMissing('xf_user_tfa', ['user_id' => $user->user_id]);
+		$this->assertDatabaseMissing('xf_user_tfa_trusted', ['user_id' => $user->user_id]);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $user->user_id, 'use_tfa' => 0]);
+	}
+
+	/**
+	 * A passkey is a credential and not merely a setting: it authenticates on its own, through a
+	 * controller action that never reaches the Login service this add-on replaces. An archived
+	 * account that keeps one is still refused - XenForo turns away a disabled account on every
+	 * public action - but it is refused with core's generic page rather than this add-on's
+	 * message, and the row stays in the database for as long as the forum does.
+	 */
+	public function test_archiving_clears_passkeys(): void
+	{
+		if (\XF::$versionId < 2030000)
+		{
+			$this->markTestSkipped('passkeys arrived in XF 2.3');
+		}
+
+		$user = $this->aPasskeyHolder();
+
+		$this->repo()->archiveUser($user);
+
+		$this->assertDatabaseMissing('xf_passkey', ['user_id' => $user->user_id]);
+		$this->assertDatabaseMissing('xf_user_tfa', ['user_id' => $user->user_id]);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $user->user_id, 'use_tfa' => 0]);
+	}
+
+	/**
+	 * Restoring does not put two-step back, and that is the decision rather than an omission:
+	 * nothing records that the account had it, because nothing could record the secret behind it.
+	 * An owner whose account comes back sets it up again, from an account that can be logged in to.
+	 */
+	public function test_restoring_does_not_put_two_step_back(): void
+	{
+		$user = $this->anAccountWithTwoStep();
+		$this->repo()->archiveUser($user);
+
+		$this->repo()->restoreUser($user);
+
+		$this->assertDatabaseMissing('xf_user_tfa', ['user_id' => $user->user_id]);
+		$this->assertDatabaseMissing('xf_user_tfa_trusted', ['user_id' => $user->user_id]);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $user->user_id, 'use_tfa' => 0]);
+	}
+
+	/**
+	 * **What a forum archived by an earlier version has to do**, and the reason it is safe.
+	 * Those accounts still hold the passkeys and two-step rows nothing used to clear, and no
+	 * upgrade step goes looking for them - running `archive:archive-all-users` again is the way,
+	 * because the job walks every row in `xf_user` rather than only the unarchived ones.
+	 *
+	 * So archiving an already-archived account has to be harmless, and the part that would not be
+	 * is the archive row: `previous_state` was recorded from an account that was still valid, and
+	 * rewriting it with `disabled` would make every later restore a no-op. `archiveUser()` creates
+	 * the row only when there is not one, which is what this asserts - with the state set
+	 * explicitly first, since a borrowed account can be `disabled` to begin with and the
+	 * assertion would then pass whether the row was rewritten or not.
+	 */
+	public function test_archiving_an_already_archived_account_clears_credentials_and_keeps_its_record(): void
+	{
+		$user = $this->anAccountWithTwoStep();
+		$user->user_state = 'valid';
+		$user->save();
+
+		$this->repo()->archiveUser($user);
+		$previousState = $user->ArchivedUser->previous_state;
+		$this->assertSame('valid', $previousState, 'the fixture did not record what it meant to');
+
+		// two-step the account still has, because the version that archived it did not clear any
+		$this->app()->repository('XF:Tfa')->enableUserTfaProvider(
+			$user,
+			$this->app()->em()->find('XF:TfaProvider', 'totp'),
+			['secret' => str_repeat('a', 16)]
+		);
+
+		$this->assertTrue($this->repo()->archiveUser($user));
+
+		$this->assertDatabaseMissing('xf_user_tfa', ['user_id' => $user->user_id]);
+		$this->assertDatabaseHas('xf_archivesite_user', [
+			'user_id' => $user->user_id,
+			'previous_state' => $previousState,
+		]);
+	}
 }

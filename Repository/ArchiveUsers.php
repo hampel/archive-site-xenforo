@@ -121,6 +121,11 @@ class ArchiveUsers extends Repository
 		// clear User Remember records so cookies no longer work
 		$this->repository('XF:UserRemember')->clearUserRememberRecords($user->user_id);
 
+        // and every other way in: a passkey authenticates on its own, and a two-step row is
+        // configuration nothing else prunes. Archiving is one way, so these go with the password
+        // rather than being recorded for a restore - there is nothing restorable in them anyway.
+        $this->clearCredentials($user);
+
         $previousScheme = $user->Auth ? $user->Auth->scheme_class : '';
 
         // remove users password - an account with no authentication row has none to remove, and
@@ -215,6 +220,49 @@ class ArchiveUsers extends Repository
 
         return true;
 	}
+
+    /**
+     * Remove every passkey and two-step record the account has.
+     *
+     * Two different things, and only the first is a credential. A passkey in `xf_passkey`
+     * authenticates on its own, through a route that never reaches `Login::validate()` - so until
+     * this was cleared, a passkey holder on an archived forum authenticated successfully and met
+     * XenForo's generic disabled-account page instead of this add-on's message. Two-step rows are
+     * the configuration guarding a password login, plus `xf_user_tfa_trusted`, the devices allowed
+     * to skip it.
+     *
+     * **The order is load-bearing.** Deleting the passkeys first lets XenForo's own `Passkey`
+     * entity retire the `passkey` two-step provider row it maintains beside them, and
+     * `disableTfaForUser()` then clears whatever is left and puts `user_option.use_tfa` back to 0.
+     * That flag is the half worth being careful about: set with no provider rows behind it, it
+     * asks a restored account for a code nothing can issue.
+     *
+     * **`xf_tfa_attempt` is deliberately left alone.** It is rate limiting rather than anything
+     * the account owns, and XenForo's own cron deletes every row in it over a day old.
+     *
+     * @param User $user
+     */
+    protected function clearCredentials(User $user)
+    {
+        // Passkeys arrived in XF 2.3 and this add-on's floor is 2.2, where the table, the entity
+        // and the repository all do not exist - so resolving any of them there is a fatal during
+        // an archive run rather than an empty result.
+        if (\XF::$versionId >= 2030000)
+        {
+            $passkeys = $this->repository('XF:Passkey')->findPasskeysForUser($user)->fetch();
+
+            // one at a time through the entity, rather than a delete on the table, so that an
+            // add-on with its own data hanging off a passkey is told the passkey has gone
+            foreach ($passkeys AS $passkey)
+            {
+                $passkey->delete();
+            }
+        }
+
+        // every provider row, every trusted device, and the use_tfa flag, which is XenForo's own
+        // definition of clearing two-step: it is what the account security page calls.
+        $this->repository('XF:Tfa')->disableTfaForUser($user);
+    }
 
     /**
      * Whether the scheme an account had before archiving provided a password at all.

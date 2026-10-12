@@ -283,4 +283,63 @@ class ArchiveUsersTest extends TestCase
 		$this->assertSame($before, $this->accounts());
 		$this->assertErrorLogged();
 	}
+
+	/**
+	 * The bulk run is the path a real forum takes, and the one with a history: an account in an
+	 * awkward state has twice stopped a run part-way and left every account after it active. So
+	 * this asserts both halves - that the credentials went, and that the run still finished.
+	 *
+	 * It also puts `archiveUser()`'s two nested transactions inside the job's, which is where a
+	 * savepoint either works or takes the whole run down with it.
+	 */
+	public function test_a_bulk_run_clears_two_step_records_and_finishes(): void
+	{
+		$protected = $this->protectedIdsOrSkip();
+		$withTfa = $this->anAccountWithTwoStep();
+		$before = $this->accounts();
+
+		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected]);
+
+		$this->assertDatabaseMissing('xf_user_tfa', ['user_id' => $withTfa]);
+		$this->assertDatabaseMissing('xf_user_tfa_trusted', ['user_id' => $withTfa]);
+		$this->assertDatabaseHas('xf_user_option', ['user_id' => $withTfa, 'use_tfa' => 0]);
+
+		$after = $this->accounts();
+		foreach (array_diff(array_keys($before), $protected) AS $id)
+		{
+			$this->assertArchived($after[$id], "user $id was not archived - the run stopped early");
+		}
+	}
+
+	/**
+	 * Two-step on one active account, through XenForo's own repository so that the rows are the
+	 * ones the account security page writes, plus a trusted device.
+	 */
+	protected function anAccountWithTwoStep(): int
+	{
+		$provider = $this->app()->em()->find('XF:TfaProvider', 'totp');
+		if (!$provider)
+		{
+			$this->markTestSkipped('needs the totp two-step provider on the forum');
+		}
+
+		$user = $this->repo()->activeUsers()->fetchOne();
+		if (!$user)
+		{
+			$this->markTestSkipped('needs an active, non-protected user on the forum');
+		}
+
+		$this->app()->repository('XF:Tfa')
+			->enableUserTfaProvider($user, $provider, ['secret' => str_repeat('a', 16)]);
+
+		$this->app()->db()->insert('xf_user_tfa_trusted', [
+			'user_id' => $user->user_id,
+			'trusted_key' => str_repeat('b', 32),
+			'trusted_until' => \XF::$time + 86400,
+		]);
+
+		$this->assertDatabaseHas('xf_user_tfa', ['user_id' => $user->user_id, 'provider_id' => 'totp']);
+
+		return $user->user_id;
+	}
 }
