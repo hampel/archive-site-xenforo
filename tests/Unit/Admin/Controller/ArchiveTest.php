@@ -212,4 +212,142 @@ class ArchiveTest extends TestCase
 
 		$this->assertReplyIsError($reply, 403);
 	}
+
+	// ---- every page, not only the two the regressions were on ---------------------------------
+
+	/**
+	 * Each list page and the finder it is the view of. The rows are one page of that finder, so
+	 * the total is what tells a page reading the wrong set from one reading the right set.
+	 */
+	public static function listPages(): array
+	{
+		return [
+			'protected' => ['archive/protected-users', 'hampel_archivesite_protected_users', 'protectedUsers'],
+			'archived' => ['archive/archived-users', 'hampel_archivesite_archived_users', 'archivedUsers'],
+			'partially archived' => ['archive/partially-archived-users', 'hampel_archivesite_partially_archived_users', 'partiallyArchivedUsers'],
+			'active' => ['archive/active-users', 'hampel_archivesite_active_users', 'activeUsers'],
+		];
+	}
+
+	/**
+	 * A development forum holds no archived and no partially archived accounts, so both of those
+	 * totals are 0 and a page reading the wrong one of them passes. Inside the transaction members
+	 * are made to look archived with no record, and others archived, one at a time until every set
+	 * has its own size. A fixed count is not enough: the protected set is the forum's super admins,
+	 * whose number the forum decides - one, here, which is what a single planted account matched.
+	 */
+	protected function plantDistinguishableSets($repo): void
+	{
+		$totals = function () use ($repo)
+		{
+			$this->app()->em()->clearEntityCache();
+
+			return array_map(function ($finder) use ($repo) { return $repo->$finder()->total(); },
+				array_column(static::listPages(), 2));
+		};
+		$distinct = function (array $values) { return count(array_unique($values)) === count($values); };
+
+		$users = array_values($repo->activeUsers()->with('Auth')->fetch(12)->toArray());
+
+		// listPages() order: protected, archived, partially archived, active
+		do
+		{
+			$user = array_shift($users);
+			if (!$user)
+			{
+				$this->markTestSkipped('needs more active, non-protected users on the forum');
+			}
+			if ($user->Auth)
+			{
+				$user->Auth->setNoPassword();
+				$user->Auth->save();
+			}
+			$user->user_state = 'disabled';
+			$user->save();
+			$now = $totals();
+		}
+		while ($now[2] === $now[0] || $now[2] === $now[3]);
+
+		while (!$distinct($now))
+		{
+			$user = array_shift($users);
+			if (!$user)
+			{
+				$this->markTestSkipped('needs more active, non-protected users on the forum');
+			}
+			$repo->archiveUser($user);
+			$now = $totals();
+		}
+	}
+
+	/**
+	 * Rendered as well as dispatched, because the template is this add-on's and nothing else
+	 * renders it: a template error there is logged and the page shows a blank where the list was.
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('listPages')]
+	public function test_each_list_page_shows_its_own_set_and_renders_cleanly(string $route, string $template, string $finder): void
+	{
+		$this->fakesErrors();
+		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
+		$this->plantDistinguishableSets($repo);
+		$this->actingAsSuperAdmin();
+
+		$reply = $this->dispatch($route, 'admin');
+
+		$this->assertReplyTemplate($reply, $template);
+		$total = $this->replyParam($reply, 'total');
+		$this->assertSame($repo->$finder()->total(), $total);
+		$this->assertSame(
+			min($total, $this->replyParam($reply, 'perPage')),
+			$this->replyParam($reply, 'users')->count(),
+			'the rows are not one page of the total'
+		);
+
+		$this->renderReply($reply);
+		$ours = array_filter(
+			$this->app()->templater()->getTemplateErrors(),
+			function ($error) { return preg_match('/^\w+:hampel_archivesite_/', (string) ($error['template'] ?? '')); }
+		);
+		$this->assertSame([], array_values($ours), "the $template template raised an error");
+	}
+
+	/**
+	 * Every action but the index is a super admin's, and the guard is a default branch rather than
+	 * a list - so a page added to the index's case, or a new action given its own, is what this
+	 * catches.
+	 */
+	public static function superAdminRoutes(): array
+	{
+		return [
+			'protected' => ['archive/protected-users'],
+			'archived' => ['archive/archived-users'],
+			'partially archived' => ['archive/partially-archived-users'],
+			'active' => ['archive/active-users'],
+			'archive confirmation' => ['archive/archive-users'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('superAdminRoutes')]
+	public function test_an_ordinary_admin_is_refused_every_page_but_the_index(string $route): void
+	{
+		$admin = $this->actingAsMember(['is_admin' => true]);
+		$this->setVisitorAdminPermissions($admin, ['user' => true]);
+
+		$this->assertReplyIsError($this->dispatch($route, 'admin'), 403);
+	}
+
+	/**
+	 * The index is the one route without the guard, and all it does is point at the protected
+	 * list - which then asks for a super admin like every other page.
+	 */
+	public function test_the_index_sends_an_admin_to_the_protected_users_page(): void
+	{
+		$admin = $this->actingAsMember(['is_admin' => true]);
+		$this->setVisitorAdminPermissions($admin, ['user' => true]);
+
+		$reply = $this->dispatch('archive', 'admin');
+
+		$this->assertReplyIsRedirect($reply);
+		$this->assertStringContainsString('archive/protected-users', $reply->getUrl());
+	}
 }
