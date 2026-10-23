@@ -144,10 +144,13 @@ the real case looks like: a forum with no super admin and nothing in `config.php
 **A render on a forum shared with other add-ons logs errors that are nobody's fault, so the
 rendering tests do not assert on all of them.** Template modifications are compiled into the
 install's shared template cache, while the suite's isolation deliberately loads no other add-on's
-class extensions — so a sibling whose modification reads a column its own entity extension
-declares logs a warning on every render here, while the same page is faultless in a browser.
-`TemplateRenderingTest` therefore asserts only on errors naming something this add-on inserted: an
-`$xf.options.hampelArchiveSite` option, the `ArchivedUser` relation, or one of its own templates.
+class extensions — so a sibling whose modification reads a column or calls a method its own entity
+extension declares logs a warning on every render here, while the same page is faultless in a
+browser. `TemplateRenderingTest` therefore asserts only on errors raised in one of this add-on's
+templates, or naming an `$xf.options.hampelArchiveSite` option or the `ArchivedUser` relation.
+**Never by the class an error is about**: every user resolves to this add-on's `User` extension
+while it is loaded, so a sibling's fault on a user names this add-on's class as the object. A test
+of the attribution itself covers both directions.
 **The blanket assertion is the stronger check and wants a forum with only this add-on installed**,
 which is what a sandbox is for — worth doing when the rendering half changes materially.
 

@@ -31,37 +31,99 @@ class TemplateRenderingTest extends TestCase
 	 *
 	 * Template modifications are compiled into the install's shared template cache, while
 	 * $addonsToLoad deliberately loads no other add-on's class extensions. So a sibling add-on
-	 * whose modification reads a column its own entity extension declares logs a warning on every
-	 * render in this suite, on a forum where nothing is wrong at all - the getter exists whenever
-	 * the forum is not being isolated for a test. Hampel/Newsletters' thread_view modification is
-	 * the case that forced this: it reads $forum.newsletters_allow.
+	 * whose modification reads a column or calls a method its own entity extension declares logs a
+	 * warning on every render in this suite, on a forum where nothing is wrong at all - the getter
+	 * exists whenever the forum is not being isolated for a test. Hampel/Newsletters' thread_view
+	 * modification is the case that forced this: it reads $forum.newsletters_allow.
 	 *
 	 * None of that is ours to assert on. What is ours is that nothing this add-on inserts into a
-	 * template went wrong, and every insertion reads $xf.visitor, an $xf.options.hampelArchiveSite
-	 * option or the ArchivedUser relation, so a fault in one names something in that list.
+	 * template went wrong. See ourTemplateErrors() for how an error is attributed.
 	 *
 	 * The blanket assertion is the stronger check and belongs in a forum with only this add-on
 	 * installed - a sandbox, per TESTING.md.
 	 */
 	protected function assertNoTemplateErrorsFromThisAddOn(): void
 	{
+		$this->assertSame(
+			[],
+			static::ourTemplateErrors($this->app()->templater()->getTemplateErrors()),
+			'a template error names something this add-on put there'
+		);
+	}
+
+	/**
+	 * The template errors this add-on is answerable for: one raised inside its own templates, or
+	 * one whose message names something its insertions read - an option, or the ArchivedUser
+	 * relation. Every insertion reads $xf.visitor, a hampelArchiveSite option or that relation.
+	 *
+	 * **The class an error is about does not count, and that is the point of asking this way.**
+	 * While this add-on is loaded, every XF:User resolves to its User extension, so when a sibling's
+	 * modification calls a method its own extension adds, XenForo's message names
+	 * Hampel\ArchiveSite\XF\Entity\User as the object. Matching "archivesite" anywhere in the
+	 * error blamed this add-on for that, from the 2.2.3 release until 2026-10-23.
+	 *
+	 * @param array $errors as Templater::getTemplateErrors() returns them
+	 *
+	 * @return string[] each attributable error, JSON-encoded for the failure message
+	 */
+	protected static function ourTemplateErrors(array $errors): array
+	{
 		$ours = [];
 
-		foreach ($this->app()->templater()->getTemplateErrors() AS $error)
+		foreach ($errors AS $error)
 		{
-			$described = is_array($error) ? json_encode($error) : (string) $error;
+			$template = is_array($error) ? (string) ($error['template'] ?? '') : '';
+			$message = is_array($error) ? (string) ($error['error'] ?? '') : (string) $error;
 
-			foreach (['hampelarchivesite', 'archiveduser', 'archivesite'] AS $name)
+			if (preg_match('/^\w+:hampel_archivesite_/', $template)
+				|| preg_match('/hampelArchiveSite|ArchivedUser/i', $message)
+			)
 			{
-				if (stripos($described, $name) !== false)
-				{
-					$ours[] = $described;
-					break;
-				}
+				$ours[] = is_array($error) ? json_encode($error) : $message;
 			}
 		}
 
-		$this->assertSame([], $ours, 'a template error names something this add-on put there');
+		return $ours;
+	}
+
+	public function test_a_template_error_is_attributed_by_where_it_is_and_what_it_names(): void
+	{
+		$sibling = 'public:sibling_macros';
+		$ourClass = 'Hampel\ArchiveSite\XF\Entity\User';
+
+		$errors = [
+			'a sibling calling its own method on a user, which names our class as the object' => [
+				'template' => $sibling, 'type' => E_USER_WARNING,
+				'error' => "[E_USER_WARNING] Method canUseSomething is not callable on the given object ($ourClass)",
+			],
+			'a sibling reading its own column' => [
+				'template' => 'public:thread_view', 'type' => E_USER_WARNING,
+				'error' => "[E_USER_WARNING] Accessed unknown getter 'sibling_allow' on XF:Forum[2]",
+			],
+			'an error inside one of our templates' => [
+				'template' => 'admin:hampel_archivesite_archived_users', 'type' => E_USER_WARNING,
+				'error' => "[E_USER_WARNING] Accessed unknown getter 'anything' on XF:User[1]",
+			],
+			'one of our options, from a core template we modify' => [
+				'template' => 'public:forum_view', 'type' => E_USER_WARNING,
+				'error' => "[E_USER_WARNING] Template public:forum_view: hampelArchiveSiteEndMessage is not an array",
+			],
+			'the relation our insertions read' => [
+				'template' => 'public:thread_view', 'type' => E_USER_WARNING,
+				'error' => "[E_USER_WARNING] Accessed unknown getter 'ArchivedUser' on XF:User[3]",
+			],
+		];
+
+		$attributed = array_keys(array_filter(
+			$errors,
+			fn($error) => static::ourTemplateErrors([$error]) !== []
+		));
+
+		$this->assertSame([
+			'an error inside one of our templates',
+			'one of our options, from a core template we modify',
+			'the relation our insertions read',
+		], $attributed);
 	}
 
 	protected function asMember(array $permissions = []): void
