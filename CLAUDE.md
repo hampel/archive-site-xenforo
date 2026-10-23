@@ -54,7 +54,7 @@ The suite runs against a real forum's database, which is what makes it worth hav
 three rules non-negotiable:
 
 - **Anything that writes uses `UsesDatabaseTransactions`**, so archiving a user in a test archives
-  nobody. Seven of the test classes write and all seven use it; the rest only read.
+  nobody. Every test class that writes uses it; the rest only read.
 - **Borrow users, never create them.** With isolation on, XenForo builds a user `INSERT` from the
   structure it has loaded, so a `NOT NULL` column another installed add-on adds to a user table has
   no value and the save fails. The tests take an existing active user inside the transaction.

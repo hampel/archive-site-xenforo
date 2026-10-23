@@ -9,8 +9,8 @@ use Tests\TestCase;
  * Dispatched rather than invoked, because every action but the index is guarded by
  * assertSuperAdmin() in preDispatchController(), and calling an action directly never runs it.
  *
- * Read-only routes, but wrapped in a transaction anyway so nothing an admin dispatch happens to
- * write can outlive the test.
+ * The routes only read, but the list-page test plants archived and partially archived accounts so
+ * that the sets differ, and the transaction is what makes that archive nobody.
  */
 class ArchiveTest extends TestCase
 {
