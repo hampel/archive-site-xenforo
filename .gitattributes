@@ -6,6 +6,7 @@
 # The XenForo release zip is a separate mechanism — see build.json's rm line.
 /CLAUDE.md        export-ignore
 /CLAUDE.local.md  export-ignore
+/HISTORY.local.md export-ignore
 /TESTING.md       export-ignore
 /.gitattributes   export-ignore
 /.gitignore       export-ignore

@@ -243,6 +243,52 @@ echo "whatsnew:  $(echo "$out" | grep -c 'p-navgroup-link--whatsnew')"   # must 
 XenForo version the add-on declares support for — the second is what makes the declared floor
 evidence rather than assumption. Both are worth re-running whenever the floor moves.
 
+## Writing a test
+
+**The suite runs against whatever forum it is pointed at, and that forum is the hazard.**
+`CLAUDE.md` carries the three rules a test must follow to leave the forum alone — transactions,
+borrowed users, `fakesErrors()` — and the config clearing in `Tests\TestCase::setUp()`. What
+follows is what you need to write one that proves what it is named for.
+
+### The framework floor
+
+**Requires the framework at `^5.18`**, and each step up bought something the suite relies on. 5.0.0
+stopped isolation dropping extensions registered on a class name XenForo 2.3 renamed — and `Login`,
+`PasswordReset` and `Finder\User` are exactly the renamed names this add-on's 2.2 floor requires, so
+on an older framework their tests exercise core instead. 5.3.0 added `runJobToCompletion()`, 5.4.0
+the `$xf` a rendered template reads, 5.10.0 to 5.18.0 the console helpers `Cli\CommandsTest` and
+`Cli\ReportCommandsTest` are made of, and 5.15.0 a CSRF-carrying `dispatch()`, so the archive button
+is a real `POST` with its super-admin guard intact and `dispatchWithoutCsrfToken()` proves the check
+refuses.
+
+**`assertReplyParam()`'s third argument is a failure message, not an expected value** —
+`assertReplyParamSame()` is the assertion. The archive page's count test asserted only that four
+parameters existed until 5.14.0 began refusing a value there.
+
+### A test can be told what to think by the forum
+
+**Whether the clearing is doing anything depends on the forum.** On one that sets neither key it is
+a no-op, which is how the leak survived four release cycles. On one that sets the nested list it is
+load-bearing: removing it failed nine config-protected-user tests in a seeded sandbox on 2026-10-11.
+With `allowMail` set as well, five `MailTest` tests fail too, in both directions, because the flag
+test asserts the refusal as a control before switching the flag on. `Config\AllowMailTest` fails
+none — every one of its cases sets the key itself, which is what immunity to the forum looks like
+and the pattern to copy. *Needs a sandbox and seeded content* below has the command for
+building a forum that shows it.
+
+**And `config.php` is only half of it: the forum's population is the other half.** A test that
+asserts something of every account asserts it of whatever accounts the forum has. The restore job
+test once asserted that every restored account got a password back, which is false for one that
+never had a password; it passed for four release cycles on a forum with no `XF:NoPassword` members,
+and failed the first time it met some. It now asserts the two populations separately, and the
+passwordless half fails if the 2.2.0 restore fix is reverted.
+
+**A test can pass while proving nothing it is named for, and the config leak produced two.**
+`test_nothing_is_protected_by_an_empty_list` was reading the forum's list rather than the empty one
+it set. `LoginTest`'s protected-account-without-a-password test passes with its protection removed,
+because the archive-row keying produces the same result — **that one is still weaker than its
+name**, and is the next thing to tighten.
+
 ## Needs a sandbox and seeded content
 
 **Settled by a machine, but not by a machine pointed at the development forum.** Build the instance
