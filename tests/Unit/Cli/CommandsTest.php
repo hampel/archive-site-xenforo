@@ -154,6 +154,56 @@ class CommandsTest extends TestCase
 		$this->assertSame($previousState, $restored->user_state);
 	}
 
+	/**
+	 * The restore command's own protected check, which nothing reached: an account archived before
+	 * somebody listed it in config.php still has its archive row, and restoring it would reset the
+	 * password of an account the forum now says must be left alone.
+	 */
+	public function test_restoring_an_account_protected_since_it_was_archived_is_refused(): void
+	{
+		$user = $this->anActiveUser();
+		$this->repo()->archiveUser($user);
+		$this->setConfig('archiveSite', ['protectedUsers' => [$user->user_id]]);
+		$this->app()->em()->clearEntityCache();
+
+		$tester = $this->runConsoleCommand(RestoreUser::class, ['user' => $user->user_id], ['inputs' => ['yes']]);
+
+		$this->assertSame(1, $tester->getStatusCode());
+		$this->assertStringContainsString('is protected', $tester->getDisplay());
+		$this->app()->em()->clearEntityCache();
+		$this->assertNotNull(
+			$this->app()->em()->find('XF:User', $user->user_id, ['ArchivedUser'])->ArchivedUser,
+			'the account was restored'
+		);
+	}
+
+	public function test_restoring_a_super_admin_is_refused(): void
+	{
+		$admin = $this->aSuperAdmin();
+
+		$tester = $this->runConsoleCommand(RestoreUser::class, ['user' => $admin->user_id], ['inputs' => ['yes']]);
+
+		$this->assertSame(1, $tester->getStatusCode());
+		$this->assertStringContainsString('is protected', $tester->getDisplay());
+	}
+
+	public function test_declining_the_restore_confirmation_restores_nobody(): void
+	{
+		$user = $this->anActiveUser();
+		$this->repo()->archiveUser($user);
+		$this->app()->em()->clearEntityCache();
+
+		$tester = $this->runConsoleCommand(RestoreUser::class, ['user' => $user->user_id], ['interactive' => false]);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('Aborting', $tester->getDisplay());
+		$this->app()->em()->clearEntityCache();
+		$this->assertNotNull(
+			$this->app()->em()->find('XF:User', $user->user_id, ['ArchivedUser'])->ArchivedUser,
+			'the account was restored without the confirmation'
+		);
+	}
+
 	// ---- every user --------------------------------------------------------------------------
 
 	/**
