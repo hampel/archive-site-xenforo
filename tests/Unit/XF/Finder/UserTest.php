@@ -95,4 +95,40 @@ class UserTest extends TestCase
 
 		$this->assertFalse($this->isValid($user->user_id));
 	}
+
+	/**
+	 * The method replaces core's rather than calling it, so the rest of core's condition is this
+	 * add-on's to keep: a banned account never counts, archived or not.
+	 */
+	public function test_a_banned_archived_user_who_was_valid_does_not_count(): void
+	{
+		$user = $this->aValidActiveUser();
+		$user->is_banned = true;
+		$user->save();
+
+		$this->archive($user);
+
+		$this->assertFalse($this->isValid($user->user_id));
+	}
+
+	/**
+	 * And core's recently-active half, which the members-online and statistics widgets ask for: an
+	 * archived account last seen a year ago is a member, and not a recent one.
+	 */
+	public function test_recently_active_still_means_recently_active_for_an_archived_user(): void
+	{
+		$user = $this->aValidActiveUser();
+		$this->archive($user);
+		$this->app()->db()->update('xf_user', ['last_activity' => \XF::$time - 365 * 86400], 'user_id = ?', $user->user_id);
+		$recentlyValid = function () use ($user)
+		{
+			return (bool) $this->app()->finder('XF:User')->isValidUser(true)->where('user_id', $user->user_id)->total();
+		};
+
+		$this->assertTrue($this->isValid($user->user_id));
+		$this->assertFalse($recentlyValid(), 'an account idle for a year counted as recently active');
+
+		$this->app()->db()->update('xf_user', ['last_activity' => \XF::$time], 'user_id = ?', $user->user_id);
+		$this->assertTrue($recentlyValid(), 'an archived account active today did not count');
+	}
 }
