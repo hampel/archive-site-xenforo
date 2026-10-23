@@ -3,7 +3,7 @@
     "description": "Remove log in or register to post from thread view pages",
     "execution_order": 10,
     "enabled": true,
-    "action": "str_replace",
-    "find": "\t\t\t\t\t\t<xf:else />\n\t\t\t\t\t\t\t<xf:button href=\"{{ link('login') }}\" class=\"button--link button--wrap\" overlay=\"true\">\n\t\t\t\t\t\t\t\t{{ phrase('log_in_or_register_to_reply') }}\n\t\t\t\t\t\t\t</xf:button>",
+    "action": "preg_replace",
+    "find": "#<xf:else />\\s+<xf:button href=\"\\{\\{ link\\('login'\\) \\}\\}\" class=\"button--link(?: button--wrap)?\" overlay=\"true\">\\s+\\{\\{ phrase\\('log_in_or_register_to_reply'\\) \\}\\}\\s+</xf:button>#",
     "replace": ""
 }

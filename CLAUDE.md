@@ -424,7 +424,7 @@ the 2.3 spellings would be a floor change**, whether or not `addon.json` said so
 
 ## Template modifications match stock markup exactly, so an XF upgrade breaks them quietly
 
-Twelve of the fourteen are `str_replace` against literal text copied out of core templates, tabs
+Eleven of the fourteen are `str_replace` against literal text copied out of core templates, tabs
 included. When XF edits one of those templates the find string stops matching, the modification
 reports zero replacements and the page renders as stock — a guest sees the log-in prompts and the
 birthdays the add-on exists to hide, and nothing raises an error. **The log's `status` column still
@@ -435,12 +435,19 @@ with `status === 'ok'` and `apply_count === 0` as `not_found`, so a dead modific
 found* in `Admin CP > Appearance > Template modifications`. What `archive:validate` adds is a
 `[fail]` and an exit code for a forum nobody is looking at, from the same count: `SUM(apply_count)`
 over `xf_template_modification_log`, which holds one row per template per modification. Two read 0
-on XF 2.3, and both are now `preg_replace` for the reason below.
+on XF 2.3 and a third on early 2.2, and all three are now `preg_replace` for the reason below.
 
-**The two `preg_replace` ones exist because an exact match cannot span both supported XF versions.**
-`hampelArchiveSitePageContainerWhatsNew` broke on 2.3 when the block moved one tab deeper inside a
-new `div`, and `hampelArchiveSiteXFMGMediaViewMacros` when 2.3 replaced `<xf:macro template="X"
-name="Y">` with `<xf:macro id="X::Y">`, so its find carries both spellings. Reach for `preg_replace`
+**The three `preg_replace` ones exist because an exact match cannot span both supported XF
+versions.** `hampelArchiveSitePageContainerWhatsNew` broke on 2.3 when the block moved one tab
+deeper inside a new `div`, and `hampelArchiveSiteXFMGMediaViewMacros` when 2.3 replaced
+`<xf:macro template="X" name="Y">` with `<xf:macro id="X::Y">`, so its find carries both spellings.
+`hampelArchiveSiteThreadView` was copied from a 2.2 release that had added `button--wrap` to the
+button's classes, so on 2.2.0 it matched nothing; its find makes that class optional.
+
+**Count a find against the oldest release the floor covers, not against the installs you develop
+on.** The thread-view gap went unseen from the 2.2.0 floor until 2.2.4, because every earlier check
+read the template out of an installed 2.2 that was newer than the floor. `TESTING.md`'s *Automated*
+has the check, which reads XenForo's release zips directly. Reach for `preg_replace`
 when a find has to tolerate reformatting or a syntax change, not as a default — an exact match is
 easier to read and to verify.
 

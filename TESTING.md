@@ -35,7 +35,7 @@ Fourteen, all keyed on `$xf.visitor.user_id` except where noted.
 | `member_about` | `MemberAboutHideFollowers` | hides followers from guests |
 | `member_about` | `MemberAboutHideFollowing` | hides following from guests |
 | `thread_list_macros` | `ThreadListMacros` | hides the lock symbol from guests |
-| `thread_view` | `ThreadView` | removes the "log in or register to post" button |
+| `thread_view` | `ThreadView` | removes the "log in or register to post" button — `preg_replace` |
 | `thread_view` | `ThreadViewNotOpen` | hides "not open for further replies" from guests |
 | `thread_view` | `ThreadViewSiteArchived` | inserts the content end message |
 | `widget_forum_statistics` | `WidgetForumStatistics` | hides the latest member from guests |
@@ -73,7 +73,7 @@ entire set of accounts an archive run leaves alone. Both `archive-all-users` and
 a run and a forum nobody can log in to. Anything that changes how the list is read deserves a
 deliberate test of the empty case.
 
-**Template modifications match stock markup, so a XenForo upgrade breaks them silently.** Twelve
+**Template modifications match stock markup, so a XenForo upgrade breaks them silently.** Eleven
 use an exact `str_replace` against text copied from core templates, tabs included. When a core
 template is reformatted the find stops matching, the page renders as stock, and **the log's
 `status` column still says `ok`** — it reports whether the modification ran, not whether it
@@ -239,9 +239,42 @@ echo "rendered:  $(echo "$out" | grep -c 'p-navgroup')"          # must be non-z
 echo "whatsnew:  $(echo "$out" | grep -c 'p-navgroup-link--whatsnew')"   # must be zero
 ```
 
-**Class extension targets resolve**, and the find strings match the core templates of *every*
-XenForo version the add-on declares support for — the second is what makes the declared floor
-evidence rather than assumption. Both are worth re-running whenever the floor moves.
+**Every find matches once in every XenForo release the floor covers**, and this is the check that
+makes the declared floor evidence rather than assumption. The forum you test on cannot answer it:
+it holds one release, and almost never the oldest one the floor admits. XenForo's full release zips
+carry each product's master templates at `upload/src/addons/<Product>/_data/templates.xml`, so a
+find can be counted against any release without installing it. Run from the add-on's root, passing
+the full zip of each release:
+
+```bash
+php -r '
+$mods = [];
+foreach (glob("_output/template_modifications/*/*.json") as $f) {
+    $mods[basename($f, ".json")] = json_decode(file_get_contents($f), true) + ["type" => basename(dirname($f))];
+}
+foreach (array_slice($argv, 1) as $zipPath) {
+    $zip = new ZipArchive(); $zip->open($zipPath); $templates = [];
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        if (!preg_match("#src/addons/\w+/_data/templates\.xml$#", $zip->getNameIndex($i))) continue;
+        foreach (simplexml_load_string($zip->getFromIndex($i))->template as $t)
+            $templates[$t["type"] . ":" . $t["title"]] = (string) $t;
+    }
+    $off = [];
+    foreach ($mods as $key => $m) {
+        $tpl = $templates[$m["type"] . ":" . $m["template"]] ?? null;
+        if ($tpl === null) continue;    // that product is not in this zip
+        $n = $m["action"] === "preg_replace" ? preg_match_all($m["find"], $tpl) : substr_count($tpl, $m["find"]);
+        if ($n !== 1) $off[] = "$key=$n";
+    }
+    [$product, $version] = explode("_", basename($zipPath));   // print nothing else from the name
+    echo "$product $version: ", $off ? implode(", ", $off) : "every modification matches once", "\n";
+}' path/to/xenforo_2.2.0_*.zip path/to/xenforo_2.3.*.zip path/to/xfmg_*.zip
+```
+
+**Include a release below the floor as a control.** On XenForo 2.1 two `forum_view` modifications
+match nothing, which is correct and is what shows the count is capable of failing. The thread-view
+modification is the case this exists for: a find copied from 2.2.19 matched nothing on 2.2.0, a
+release the floor had always admitted, until 2.2.4.
 
 ## Writing a test
 
