@@ -25,9 +25,8 @@ class ArchiveUsers extends AbstractRebuildJob
 	 * **An empty protected list refuses the whole run.** Archiving every account, administrators
 	 * included, is the one outcome this add-on must never produce by accident, and it is what an
 	 * unprotected run would produce. Both CLI commands abort for that reason; this covers the
-	 * paths that do not go through them - `xf:rebuild`, or anything else enqueuing the job
-	 * directly - since the ACP button is reachable only by a super admin, who is therefore always
-	 * in the list it enqueues.
+	 * paths that do not go through them - any code enqueuing the job directly - since the ACP
+	 * button is reachable only by a super admin, who is therefore always in the list it enqueues.
 	 *
 	 * Returning no ids completes the job, having touched nobody, and the logged error is the
 	 * record. `archive:validate` reports the same state as a failure.

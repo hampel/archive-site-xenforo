@@ -229,8 +229,7 @@ class ArchiveUsersTest extends TestCase
 
 	/**
 	 * A forum with no super admin and nothing in config.php - which is the only way the protected
-	 * list comes back empty, and what `xf:rebuild` or any other direct enqueue would then hand the
-	 * job.
+	 * list comes back empty, and what any direct enqueue would then hand the job.
 	 *
 	 * **Passing `['protectedUsers' => []]` as job data does not reach that state**, because
 	 * setupData() treats an empty list as "not supplied yet" and refills it from the repository.
@@ -249,9 +248,9 @@ class ArchiveUsersTest extends TestCase
 	/**
 	 * The run that must never happen: with nothing protected, archiving every account would leave
 	 * a forum nobody can log in to, administrators included. Both CLI commands abort on it; this
-	 * covers everything that does not go through them - `xf:rebuild`, or any other code enqueuing
-	 * the job - and the ACP button, which cannot reach this state because only a super admin can
-	 * press it and a super admin is always in the list it enqueues.
+	 * covers everything that does not go through them - any code enqueuing the job directly - and
+	 * the ACP button, which cannot reach this state because only a super admin can press it and a
+	 * super admin is always in the list it enqueues.
 	 */
 	public function test_a_run_with_nothing_protected_archives_nobody(): void
 	{
