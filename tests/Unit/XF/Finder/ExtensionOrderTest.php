@@ -50,4 +50,23 @@ class ExtensionOrderTest extends TestCase
 		$this->assertSame(10, $orders['XF\Service\User\PasswordReset'] ?? null);
 		$this->assertSame(10, $orders['XF\Widget\MembersOnline'] ?? null);
 	}
+
+	/**
+	 * Order is only half of it: an extension can be registered at the right order and still not
+	 * resolve, and then core's class runs with nothing to say so. The six are pinned, so one added
+	 * or dropped is named rather than silently absorbed into the framework's list.
+	 */
+	public function test_every_class_extension_resolves(): void
+	{
+		$applied = $this->assertAddOnClassExtensionsApply();
+
+		$this->assertSame([
+			'XF\Entity\User',
+			'XF\Finder\User',
+			'XF\Mail\Mail',
+			'XF\Service\User\Login',
+			'XF\Service\User\PasswordReset',
+			'XF\Widget\MembersOnline',
+		], array_keys($applied));
+	}
 }
