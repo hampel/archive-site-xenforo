@@ -37,6 +37,18 @@ class LoginTest extends TestCase
 		);
 	}
 
+	/**
+	 * Core clears the failures for this login from this address only, so this is what a
+	 * successful login empties - earlier rows from elsewhere are the forum's own and stay.
+	 */
+	protected function attemptsFromHere(string $login): int
+	{
+		return (int) $this->app()->db()->fetchOne(
+			"SELECT COUNT(*) FROM xf_login_attempt WHERE login = ? AND ip_address = ?",
+			[$login, \XF\Util\Ip::stringToBinary('127.0.0.1')]
+		);
+	}
+
 	protected function anArchivedUser(): User
 	{
 		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
@@ -70,6 +82,25 @@ class LoginTest extends TestCase
 		$this->app()->em()->clearEntityCache();
 
 		return $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser']);
+	}
+
+	/**
+	 * An active, unprotected member whose password the test knows, set through XenForo's own
+	 * setPassword() inside the transaction.
+	 */
+	protected function aMemberWithThePassword(string $password): User
+	{
+		$user = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->activeUsers()->fetchOne();
+		if (!$user || !$user->Auth)
+		{
+			$this->markTestSkipped('needs an active, non-protected user with an authentication row');
+		}
+
+		$user->Auth->setPassword($password);
+		$user->Auth->save();
+		$this->app()->em()->clearEntityCache();
+
+		return $this->app()->em()->find('XF:User', $user->user_id, ['Auth', 'ArchivedUser', 'Profile']);
 	}
 
 	protected function aSuperAdmin(): User
@@ -212,5 +243,92 @@ class LoginTest extends TestCase
 
 		$this->assertSame('incorrect_password', $error->getName());
 		$this->assertSame($before + 1, $this->attempts($user->username), 'the attempt was not recorded');
+	}
+
+	// ---- the success path: a copy of core, so a broken one locks out every account ----------
+
+	/**
+	 * The half of the copy nothing else exercises. Every assertion above is about a refusal, so a
+	 * validate() that refused everyone would pass all of them while no account - an administrator
+	 * of an archived forum included - could log in.
+	 */
+	public function test_a_member_with_the_right_password_is_logged_in_and_their_failures_cleared(): void
+	{
+		$user = $this->aMemberWithThePassword('the-right-password');
+		$before = $this->attemptsFromHere($user->username);
+		$this->validate($user->username, 'not-the-password', $ignored);
+		$this->assertSame($before + 1, $this->attemptsFromHere($user->username), 'the failed attempt was not recorded first');
+
+		$result = $this->validate($user->username, 'the-right-password', $error);
+
+		$this->assertInstanceOf(User::class, $result);
+		$this->assertSame($user->user_id, $result->user_id);
+		$this->assertNull($error);
+		$this->assertSame(0, $this->attemptsFromHere($user->username), 'a successful login did not clear the failures');
+	}
+
+	/**
+	 * What keeps an archived forum administrable: a protected account is never archived, so it
+	 * logs in with its password like any other.
+	 */
+	public function test_a_protected_user_with_the_right_password_is_logged_in(): void
+	{
+		$user = $this->aMemberWithThePassword('the-right-password');
+		$this->setConfig('archiveSite', ['protectedUsers' => [$user->user_id]]);
+
+		$result = $this->validate($user->username, 'the-right-password', $error);
+
+		$this->assertInstanceOf(User::class, $result);
+		$this->assertSame($user->user_id, $result->user_id);
+		$this->assertNull($error);
+	}
+
+	/**
+	 * Reproduced from core: a hash made with weaker settings than the forum now uses is rehashed
+	 * on a successful login, without moving the password date - it is not a password change.
+	 */
+	public function test_an_outdated_password_hash_is_upgraded_on_a_successful_login(): void
+	{
+		$user = $this->aMemberWithThePassword('the-right-password');
+		$weak = password_hash('the-right-password', PASSWORD_BCRYPT, ['cost' => 4]);
+		$this->app()->db()->update(
+			'xf_user_authenticate',
+			['scheme_class' => 'XF:Core12', 'data' => serialize(['hash' => $weak])],
+			'user_id = ?',
+			$user->user_id
+		);
+		// in the past, since the setPassword() above stamped this request's time - which is what a
+		// regression moving the date would write too
+		$passwordDate = \XF::$time - 86400;
+		$this->app()->db()->update('xf_user_profile', ['password_date' => $passwordDate], 'user_id = ?', $user->user_id);
+		$this->app()->em()->clearEntityCache();
+		$this->assertTrue(
+			$this->app()->em()->find('XF:UserAuth', $user->user_id)->getAuthenticationHandler()->isUpgradable(),
+			'the planted hash has to be one XenForo would upgrade, or this asserts nothing'
+		);
+
+		$this->assertInstanceOf(User::class, $this->validate($user->username, 'the-right-password', $error));
+
+		$this->app()->em()->clearEntityCache();
+		$auth = $this->app()->em()->find('XF:UserAuth', $user->user_id);
+		$this->assertNotSame($weak, $auth->data['hash'] ?? null, 'the hash was not upgraded');
+		$this->assertFalse($auth->getAuthenticationHandler()->isUpgradable());
+		$this->assertTrue($auth->authenticate('the-right-password'));
+		$this->assertSame(
+			$passwordDate,
+			$this->app()->em()->find('XF:UserProfile', $user->user_id)->password_date
+		);
+	}
+
+	/**
+	 * Reproduced from core: an empty login is refused before any lookup. Whether an attempt is
+	 * recorded cannot be asserted - XenForo will not save one with an empty login, and swallows
+	 * the failure - so the phrase is what tells this guard from the not-found path below it.
+	 */
+	public function test_an_empty_login_is_refused_before_any_lookup(): void
+	{
+		$this->assertNull($this->validate('', 'whatever', $error));
+
+		$this->assertSame('requested_user_not_found', $error->getName());
 	}
 }
