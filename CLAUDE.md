@@ -66,6 +66,28 @@ a test that passes with the behaviour it names deleted is counted as coverage an
 One did, and was removed — the finder's own `total()` and `fetch()` agree whether or not super
 admins leak, because the discrepancy users saw lived in the controller.
 
+## PHPStan runs at level 5, and every ignore says why
+
+```bash
+vendor/bin/phpstan analyse                            # the add-on and its suite, level 5
+vendor/bin/phpstan analyse -c phpstan.floor.neon      # shipped code, read as PHP 7.1
+vendor/bin/xenforo-phpstan generate --check           # is the forum's generated set current
+```
+
+Built on `hampel/xenforo-phpstan`, whose README is the reference for the configuration. **Check
+the generated set with `--check`, never regenerate it from here**: it lives in the forum's
+`internal_data/phpstan/` and every add-on analysed against that forum reads it.
+
+**Each `ignoreErrors` entry is scoped by identifier and path and carries its reason**, and
+PHPStan fails a run whose ignore matches nothing, so one that stops being needed is noticed. Two
+files cannot be ignored and are excluded from analysis instead: `XF/Mail/Mail.php`, whose XF 2.2
+branch is an incompatible override when read against 2.3 and which PHPStan refuses to let be
+ignored, and `tests/Fixtures/`, whose `XFCP_` parent exists only at runtime.
+
+**The floor config reads as PHP 7.1, not 7.0**, because 7.1 is as low as PHPStan goes. It catches
+newer syntax and nothing else — a function missing from old PHP is read from the PHP running the
+analysis — so the release's floor run on a 2.2 sandbox is still the proof.
+
 ## The forum's own `config.php` must not reach the suite, and clearing one key is not enough
 
 **`Tests\TestCase::setUp()` clears both `$config['archiveSite']` and the deprecated flat

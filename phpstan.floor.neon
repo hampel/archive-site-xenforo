@@ -1,0 +1,21 @@
+# The shipped code alone, read as the oldest PHP it may meet. XenForo 2.2 runs on PHP 7.0, and 7.1
+# is as low as PHPStan reads, so this reports syntax newer than 7.1 and nothing else: a function
+# missing from an old PHP is read from the PHP running the analysis. The suite is left out because
+# PHPUnit 12 is not readable as 7.1 code.
+#
+#     vendor/bin/phpstan analyse -c phpstan.floor.neon
+
+includes:
+    - phpstan.neon
+
+parameters:
+    phpVersion:
+        min: 70100
+        max: 80500
+
+    excludePaths:
+        analyse:
+            - tests
+
+    # The ignores phpstan.neon carries for the suite have nothing to match here.
+    reportUnmatchedIgnoredErrors: false
