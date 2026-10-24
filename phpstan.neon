@@ -4,6 +4,9 @@ includes:
     - vendor/hampel/xenforo-test-framework/extension.neon
 
 parameters:
+    # Level 8 measured 2026-10-24 and not taken: its two reports in shipped code are XenForo
+    # nullables that cannot be null where they are read, and the ~70 in the tests are borrowed
+    # accounts read without a null check. A later audit resumes the climb from here.
     level: 7
 
     paths:
