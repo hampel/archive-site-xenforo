@@ -2,6 +2,10 @@
 
 use XF\Mvc\Entity\Structure;
 
+/**
+ * RELATIONS
+ * @property-read \Hampel\ArchiveSite\Entity\ArchivedUser|null $ArchivedUser
+ */
 class User extends XFCP_User
 {
 	public static function getStructure(Structure $structure)

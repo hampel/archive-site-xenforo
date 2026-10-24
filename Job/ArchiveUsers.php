@@ -61,7 +61,7 @@ class ArchiveUsers extends AbstractRebuildJob
 
 	protected function rebuildById($id)
 	{
-		/** @var \XF\Entity\User $user */
+		/** @var \XF\Entity\User|null $user */
 		$user = $this->app->em()->find('XF:User', $id, ['Auth', 'ArchivedUser']);
 		if (!$user)
 		{

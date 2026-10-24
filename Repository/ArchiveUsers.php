@@ -7,7 +7,7 @@ use XF\Mvc\Entity\Repository;
 class ArchiveUsers extends Repository
 {
 	/**
-	 * @return \XF\Mvc\Entity\Finder
+	 * @return \XF\Finder\User
 	 */
 	public function protectedUsers()
 	{
@@ -46,7 +46,7 @@ class ArchiveUsers extends Repository
 	 * 2.2.0 this finder reported every one of them as partially archived, on the strength of the
 	 * authentication scheme alone. Such an account is not shut, so it is active.
 	 *
-	 * @return \XF\Mvc\Entity\Finder
+	 * @return \XF\Finder\User
 	 */
 	public function partiallyArchivedUsers()
 	{
@@ -70,7 +70,7 @@ class ArchiveUsers extends Repository
      * owns its authentication - appeared in none of the four sets at all. The row is what records
      * the previous state, so the row is what makes an account restorable.
      *
-     * @return \XF\Mvc\Entity\Finder
+     * @return \XF\Finder\User
      */
     public function archivedUsers()
     {
@@ -95,7 +95,7 @@ class ArchiveUsers extends Repository
 	 * from a left join silently excluded everybody; it is safe here only because it sits in an OR
 	 * beside a condition that does not depend on the join.
 	 *
-	 * @return \XF\Mvc\Entity\Finder
+	 * @return \XF\Finder\User
 	 */
 	public function activeUsers()
 	{
