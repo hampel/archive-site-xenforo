@@ -103,19 +103,26 @@ class TemplateModificationsTest extends TestCase
 	];
 
 	/**
-	 * Both whole-add-on assertions below fail on a modification whose template the forum does not
-	 * have, and the gallery one targets an XFMG template - so without XFMG they cannot run at all.
-	 * The first test in this class covers that forum, skipping only the gallery modification.
+	 * One per modification, except the gallery one on a forum without XFMG, whose template is
+	 * not there to apply to. `absent` is a claim the framework checks: on a forum that has the
+	 * template it fails, so the map stays an exact pin wherever the add-on is installed. The
+	 * first test in this class covers the same forum from the database side.
+	 *
+	 * @return array<string, int|string>
 	 */
-	protected function requireEveryTargetTemplate(): void
+	protected function expectedCounts(): array
 	{
 		$hasGallery = $this->app()->db()->fetchOne(
 			"SELECT 1 FROM xf_template WHERE title = 'xfmg_media_view_macros' AND type = 'public' AND style_id = 0"
 		);
+
+		$counts = array_fill_keys(static::MODIFICATIONS, 1);
 		if (!$hasGallery)
 		{
-			$this->markTestSkipped('XenForo Media Gallery is not installed, so one modification has no template');
+			$counts['hampelArchiveSiteXFMGMediaViewMacros'] = 'absent';
 		}
+
+		return $counts;
 	}
 
 	/**
@@ -125,9 +132,7 @@ class TemplateModificationsTest extends TestCase
 	 */
 	public function test_every_find_in_the_working_copy_matches_its_template_exactly_once(): void
 	{
-		$this->requireEveryTargetTemplate();
-
-		$counts = $this->assertAddOnTemplateModificationFindsMatch(null, 1);
+		$counts = $this->assertAddOnTemplateModificationFindsMatch(null, $this->expectedCounts());
 
 		$this->assertSame(static::MODIFICATIONS, array_keys($counts));
 	}
@@ -137,9 +142,7 @@ class TemplateModificationsTest extends TestCase
 	 */
 	public function test_every_modification_applies_exactly_once_in_every_template_it_reaches(): void
 	{
-		$this->requireEveryTargetTemplate();
-
-		$applied = $this->assertAddOnTemplateModificationsApplyTimes(1);
+		$applied = $this->assertAddOnTemplateModificationsApplyTimes($this->expectedCounts());
 
 		$this->assertSame(static::MODIFICATIONS, array_keys($applied));
 	}

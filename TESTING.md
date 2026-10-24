@@ -124,7 +124,7 @@ What it covers, by class:
 | `Repository\ArchiveUsersTest` | the finders never include a protected user, and every other account is in exactly one of them - including one with no authentication row, a passwordless member who is not shut (active), a shut passwordless account with no archive row (partially archived) and an archived account that has a password (archived); archiving and restoring change exactly what they should, refuse protected users and super admins, leave an account that never had a password without one, and touch nothing on an account nobody archived; and archiving clears every credential - remember-me records, passkeys, two-step provider rows, trusted devices and the `use_tfa` flag behind them - none of which a restore puts back |
 | `Admin\Controller\ArchiveTest` | each of the four list pages shows its own finder's total and one page of its rows, with archived and partially archived accounts planted until no two sets are the same size, and renders with no error from this add-on's templates; the index redirects to the protected list; the archive button, dispatched as a real `POST` through its guards, refuses without its confirmation, refuses a `GET`, refuses a request carrying no CSRF token, and otherwise queues one archive job carrying the protected list; an ordinary admin is refused every page but the index |
 | `Job\ArchiveUsersTest` | the archive and restore jobs run over every account, one per batch as well as in bulk: every unprotected account is archived, including one with no authentication row, no protected one is touched, and restoring puts each back - with a password where there was one and **without** where there was not, which is what `previous_scheme_class` records. A credential-holding account is cleared by the bulk run too, and the run still finishes - the shape that has twice stopped part-way. A run with nothing protected archives nobody, logs the refusal and completes - where it used to fail on a malformed `NOT IN ()` |
-| `TemplateModificationsTest` | every modification applies, read from the forum rather than a list; every find in `_output/` matches its master template exactly once, which fails before an import and tells one match from two; every modification applies exactly once per template; and the fourteen are pinned by name. The last two skip on a forum without XFMG |
+| `TemplateModificationsTest` | every modification applies, read from the forum rather than a list; every find in `_output/` matches its master template exactly once, which fails before an import and tells one match from two; every modification applies exactly once per template; and the fourteen are pinned by name. On a forum without XFMG the last two expect the gallery modification to apply nowhere, and still check the other thirteen |
 | `XF\Mail\MailTest` | mail to an ordinary member is refused by either setter, and to a super admin or protected user is not; an address no account holds is allowed; an address shared with an unmailable account is refused; a blocked member is recorded once, not twice; `allowMail` lets the same member through by either route, and `false` does not |
 | `XF\Widget\MembersOnlineTest` | the widget is hidden from guests and still shown to members |
 | `XF\Service\User\LoginTest` | only an archived account is told the site is archived; every other failure - a member who still has a password, a protected account, and a passwordless account that was never archived - gets core's message and is counted toward the brute-force limit; the core behaviour copied around it still holds - the right password logs in, a protected account included, and clears this address's failures; an outdated hash is upgraded without moving the password date; an empty login is refused before any lookup |
@@ -168,12 +168,13 @@ with anything. Worth running by hand whenever either overriding extension change
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
-**The suite needs the test framework at 5.18 or later** — `composer.json` requires `^5.18`.
+**The suite needs the test framework at 5.40 or later** — `composer.json` requires `^5.40`.
 Before 5.0 isolation dropped the `Login`, `PasswordReset` and `Finder\User` extensions, so their
 tests would silently exercise core; `runJobToCompletion()` for the jobs arrived in 5.3, a rendered
 template's `$xf` in 5.4, `runConsoleCommand()` in 5.10, a CSRF token on a non-GET `dispatch()` in
-5.15, `assertConsoleCommandsLoad()` in 5.17, and a command's answers in 5.18. Every rendering
-test fails on 5.3, because without `$xf` the modifications cannot read the visitor or the options.
+5.15, `assertConsoleCommandsLoad()` in 5.17, a command's answers in 5.18, and an `absent` count for
+a modification whose template another add-on supplies in 5.40. Every rendering test fails on 5.3,
+because without `$xf` the modifications cannot read the visitor or the options.
 
 The remaining checks are the ones a unit suite cannot reach:
 
@@ -288,14 +289,15 @@ follows is what you need to write one that proves what it is named for.
 
 ### The framework floor
 
-**Requires the framework at `^5.18`**, and each step up bought something the suite relies on. 5.0.0
+**Requires the framework at `^5.40`**, and each step up bought something the suite relies on. 5.0.0
 stopped isolation dropping extensions registered on a class name XenForo 2.3 renamed — and `Login`,
 `PasswordReset` and `Finder\User` are exactly the renamed names this add-on's 2.2 floor requires, so
 on an older framework their tests exercise core instead. 5.3.0 added `runJobToCompletion()`, 5.4.0
 the `$xf` a rendered template reads, 5.10.0 to 5.18.0 the console helpers `Cli\CommandsTest` and
 `Cli\ReportCommandsTest` are made of, and 5.15.0 a CSRF-carrying `dispatch()`, so the archive button
 is a real `POST` with its super-admin guard intact and `dispatchWithoutCsrfToken()` proves the check
-refuses.
+refuses. 5.40.0 took `absent` as a count, so the whole-add-on modification tests run on a forum
+without XFMG instead of skipping, and fail if the gallery template is there after all.
 
 **`assertReplyParam()`'s third argument is a failure message, not an expected value** —
 `assertReplyParamSame()` is the assertion. The archive page's count test asserted only that four

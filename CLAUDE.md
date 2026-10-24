@@ -47,7 +47,7 @@ Built on `hampel/xenforo-test-framework` v5, isolated to this add-on through `$a
 nothing Composer installs can reach a release, and `config.platform.php` sits at 8.3 for the test
 framework's sake without that raising anything this add-on ships.
 
-**Requires the framework at `^5.18`**, for reasons `TESTING.md`'s *Writing a test* gives —
+**Requires the framework at `^5.40`**, for reasons `TESTING.md`'s *Writing a test* gives —
 together with the assertion that is easy to misuse.
 
 The suite runs against a real forum's database, which is what makes it worth having and what makes
