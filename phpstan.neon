@@ -32,35 +32,12 @@ parameters:
         - XF\Options
 
     ignoreErrors:
-        # The relation is added by XF/Entity/User.php, whose @property-read declares it. The
-        # analyser carries an extension's methods up to the core class and not its properties,
-        # so a value typed XF\Entity\User does not see it.
-        -
-            identifier: property.notFound
-            message: '#^Access to an undefined property XF\\Entity\\User::\$ArchivedUser\.$#'
-        # XenForo documents install() and uninstall() as returning StepResult|null, and a setup
-        # that runs in one step returns nothing, which is null.
-        -
-            identifier: return.missing
-            path: Setup.php
-            count: 2
         # Defence in depth, documented in CLAUDE.md: an empty list would build NOT IN (), so the
         # fallback stays even though the early return above means it never applies.
         -
             identifier: ternary.alwaysTrue
             path: Job/ArchiveUsers.php
             count: 1
-        # pluckFrom() replaces each entity with the column's value, and the analyser still types
-        # what fetch() returns as the finder's entities.
-        -
-            identifier: argument.type
-            message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(XF\\(?:Entity\\User|Mvc\\Entity\\Entity)\): mixed\)\|null, ''intval'' given\.$#'
-        # JobResult answers completed through __get().
-        -
-            identifier: property.notFound
-            message: '#^Access to an undefined property XF\\Job\\JobResult::\$completed\.$#'
-            path: tests/Unit/Job/ArchiveUsersTest.php
-            count: 2
         # PHPStan remembers a static call's result across the setConfig() between the two
         # assertions, so the second reads as already decided.
         -

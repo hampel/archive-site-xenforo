@@ -1,7 +1,7 @@
 {
     "license": "MIT",
     "require-dev": {
-        "hampel/xenforo-phpstan": "^0.8",
+        "hampel/xenforo-phpstan": "^0.10",
         "hampel/xenforo-test-framework": "^5.40",
         "phpunit/phpunit": "^12.0"
     },

@@ -3,6 +3,15 @@
 use XF\Mvc\Entity\Entity;
 use XF\Mvc\Entity\Structure;
 
+/**
+ * COLUMNS
+ * @property int $user_id
+ * @property string $previous_state
+ * @property string $previous_scheme_class
+ *
+ * RELATIONS
+ * @property-read \XF\Entity\User|null $User
+ */
 class ArchivedUser extends Entity
 {
 	public static function getStructure(Structure $structure)
