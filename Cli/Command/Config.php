@@ -27,6 +27,9 @@ class Config extends Command
 
 	const FROM_OPTIONS = ' <fg=cyan>(options)</>';
 
+	/**
+	 * @return void
+	 */
 	protected function configure()
 	{
 		$this
@@ -129,6 +132,8 @@ class Config extends Command
 	/**
 	 * Its length, not its text: the messages are HTML and belong in nobody's terminal, but whether
 	 * one is set and roughly how long it is answers the question people ask.
+	 *
+	 * @param mixed $value
 	 */
 	protected function textState($value): string
 	{

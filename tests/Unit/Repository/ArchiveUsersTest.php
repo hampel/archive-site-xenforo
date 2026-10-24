@@ -50,6 +50,10 @@ class ArchiveUsersTest extends TestCase
 
 	/**
 	 * The user ids a finder matches, as integers.
+	 *
+	 * @param \XF\Mvc\Entity\Finder<\XF\Entity\User> $finder
+	 *
+	 * @return int[]
 	 */
 	protected function idsIn(\XF\Mvc\Entity\Finder $finder): array
 	{
@@ -66,9 +70,6 @@ class ArchiveUsersTest extends TestCase
 		return $this->app()->em()->find('XF:User', $userId, ['Auth', 'ArchivedUser']);
 	}
 
-	/**
-	 * An ordinary account with its authentication row removed, inside the test's transaction.
-	 */
 	/**
 	 * An account with no authentication row at all - a direct insert, a partial import, another
 	 * add-on creating users.
@@ -87,6 +88,11 @@ class ArchiveUsersTest extends TestCase
 		return $this->reload($user->user_id);
 	}
 
+	/**
+	 * @param \XF\Mvc\Entity\Finder<\XF\Entity\User> $finder
+	 *
+	 * @return int[]
+	 */
 	protected function idsOf(\XF\Mvc\Entity\Finder $finder): array
 	{
 		return array_map('intval', array_values($finder->pluckFrom('user_id')->fetch()->toArray()));

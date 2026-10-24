@@ -13,16 +13,25 @@ class RestoreAll extends AbstractRebuildCommand
         return 'restore-all-users';
     }
 
+    /**
+     * @return string
+     */
     protected function getRebuildDescription()
     {
         return 'Restore archived users so they can log in';
     }
 
+    /**
+     * @return string
+     */
     protected function getRebuildClass()
     {
         return 'Hampel\ArchiveSite:RestoreUsers';
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         parent::configure();

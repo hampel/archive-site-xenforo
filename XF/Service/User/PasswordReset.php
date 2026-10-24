@@ -2,6 +2,11 @@
 
 class PasswordReset extends XFCP_PasswordReset
 {
+	/**
+	 * @param \XF\Phrase|null $error
+	 *
+	 * @return bool
+	 */
 	public function canTriggerConfirmation(&$error = null)
 	{
 		if (!parent::canTriggerConfirmation($error))

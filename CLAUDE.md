@@ -66,10 +66,10 @@ a test that passes with the behaviour it names deleted is counted as coverage an
 One did, and was removed — the finder's own `total()` and `fetch()` agree whether or not super
 admins leak, because the discrepancy users saw lived in the controller.
 
-## PHPStan runs at level 5, and every ignore says why
+## PHPStan runs at level 7, and every ignore says why
 
 ```bash
-vendor/bin/phpstan analyse                            # the add-on and its suite, level 5
+vendor/bin/phpstan analyse                            # the add-on and its suite, level 7
 vendor/bin/phpstan analyse -c phpstan.floor.neon      # shipped code, read as PHP 7.1
 vendor/bin/xenforo-phpstan generate --check           # is the forum's generated set current
 ```
@@ -77,6 +77,18 @@ vendor/bin/xenforo-phpstan generate --check           # is the forum's generated
 Built on `hampel/xenforo-phpstan`, whose README is the reference for the configuration. **Check
 the generated set with `--check`, never regenerate it from here**: it lives in the forum's
 `internal_data/phpstan/` and every add-on analysed against that forum reads it.
+
+**Shipped code carries its types in docblocks wherever a native declaration would be wrong**,
+and level 6 is what asks for them. Two cases, for two different reasons. PHP 7.0, the floor, has
+no `void` and no `?int`, so those are `@return void` and `@param int|null`. And **a method an
+extension class overrides never gains a native return type its core parent lacks**: a sibling
+add-on extending the same class, wrapped around this one, would then be an incompatible override
+and a fatal on every request. A scalar type on a class of the add-on's own is fine, and the two
+report commands already use them. The tests run on PHP 8.3 and use native types throughout.
+
+**Level 8 was measured and not taken** (2026-10-24): two reports in shipped code, both nullable
+types XenForo declares on values that cannot be null where they are read, and about seventy in
+the tests, each a borrowed account read without a null check.
 
 **Each `ignoreErrors` entry is scoped by identifier and path and carries its reason**, and
 PHPStan fails a run whose ignore matches nothing, so one that stops being needed is noticed. Two
@@ -516,9 +528,9 @@ control panel cannot show either.
 - **Do not describe a check here as the only evidence of something without reading what core already
   shows.** Most of it is somewhere in the control panel, and the modification check was documented
   as the only evidence when it was not. The point of the command is an exit code.
-- **`Cli\RendersReport` is a copy of `Hampel/Monolog`'s**, with three typed properties and the
-  `void` return types removed because this add-on declares PHP 7.0 where Monolog declares 7.4. **Fix
-  the original and take it again**; do not improve the copy here.
+- **`Cli\RendersReport` is a copy of `Hampel/Monolog`'s**, with the four property types and the
+  `void` return types moved into docblocks because this add-on declares PHP 7.0 where Monolog
+  declares 7.4. **Fix the original and take it again**; do not improve the copy here.
 - **Every `\XF::logError()` in the add-on begins with `ArchiveSite: `**, and a test fails if one
   does not — a log mirror skips its own rows by that prefix.
 - **Resolve a class extension with `extension()->extendClass($fromClass)`, never

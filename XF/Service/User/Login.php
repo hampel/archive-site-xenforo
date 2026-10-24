@@ -7,6 +7,12 @@ use XF\Entity\User;
 
 class Login extends XFCP_Login
 {
+	/**
+	 * @param string $password
+	 * @param \XF\Phrase|null $error
+	 *
+	 * @return \XF\Entity\User|null
+	 */
 	public function validate($password, &$error = null)
 	{
 		if (!strlen($this->login))

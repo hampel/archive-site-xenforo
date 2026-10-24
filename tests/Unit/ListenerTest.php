@@ -23,6 +23,9 @@ class ListenerTest extends TestCase
 	 */
 	protected const NOT_SECRETS = [];
 
+	/**
+	 * @return array<string, array{options?: string[], config?: array<string, string[]>}>
+	 */
 	protected function declarations(): array
 	{
 		$declarations = [];
@@ -31,11 +34,18 @@ class ListenerTest extends TestCase
 		return $declarations;
 	}
 
+	/**
+	 * @return string[]
+	 */
 	protected function optionIds(): array
 	{
 		$ids = [];
 
-		foreach (glob(dirname(__DIR__, 2) . '/_output/options/*.json') AS $path)
+		// no options found would let every secrets check below pass against nothing
+		$paths = glob(dirname(__DIR__, 2) . '/_output/options/*.json') ?: [];
+		$this->assertNotEmpty($paths, 'no options found in _output/options');
+
+		foreach ($paths AS $path)
 		{
 			$name = basename($path, '.json');
 			if ($name !== '_metadata')

@@ -31,6 +31,9 @@ class PasswordResetTest extends TestCase
 		return $user;
 	}
 
+	/**
+	 * @param \XF\Phrase|null $error
+	 */
 	protected function canTrigger(User $user, &$error = null): bool
 	{
 		return $this->app()->service('XF:User\PasswordReset', $user)->canTriggerConfirmation($error);

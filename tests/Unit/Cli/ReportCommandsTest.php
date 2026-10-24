@@ -362,7 +362,10 @@ class ReportCommandsTest extends TestCase
 				continue;
 			}
 
-			foreach (file($path) AS $number => $line)
+			$lines = file($path);
+			$this->assertNotFalse($lines, "could not read $path");
+
+			foreach ($lines AS $number => $line)
 			{
 				if (preg_match('/::log(Error|Exception)\(/', $line)
 					&& strpos($line, 'ArchiveSite: ') === false
@@ -459,6 +462,8 @@ class ReportCommandsTest extends TestCase
 	 * `manual_execute` row naming this add-on's archive job on a shared development forum is not a
 	 * thing to create for real: XenForo would advertise it on the Admin CP index, and that notice's
 	 * link runs every pending manual job - which here would archive the lot.
+	 *
+	 * @param array<string, mixed> $data the job's execute_data
 	 */
 	protected function enqueueStoppedRun(string $uniqueKey, array $data, string $class = 'Hampel\\ArchiveSite:ArchiveUsers'): void
 	{

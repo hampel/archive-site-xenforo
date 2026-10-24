@@ -62,7 +62,7 @@ class TemplateRenderingTest extends TestCase
 	 * Hampel\ArchiveSite\XF\Entity\User as the object. Matching "archivesite" anywhere in the
 	 * error blamed this add-on for that, from the 2.2.3 release until 2026-10-23.
 	 *
-	 * @param array $errors as Templater::getTemplateErrors() returns them
+	 * @param array<mixed> $errors as Templater::getTemplateErrors() returns them
 	 *
 	 * @return string[] each attributable error, JSON-encoded for the failure message
 	 */
@@ -79,7 +79,7 @@ class TemplateRenderingTest extends TestCase
 				|| preg_match('/hampelArchiveSite|ArchivedUser/i', $message)
 			)
 			{
-				$ours[] = is_array($error) ? json_encode($error) : $message;
+				$ours[] = is_array($error) ? json_encode($error, JSON_THROW_ON_ERROR) : $message;
 			}
 		}
 
@@ -126,6 +126,9 @@ class TemplateRenderingTest extends TestCase
 		], $attributed);
 	}
 
+	/**
+	 * @param array<string, array<string, bool>> $permissions merged over the view permissions every test needs
+	 */
 	protected function asMember(array $permissions = []): void
 	{
 		$member = $this->actingAsMember();

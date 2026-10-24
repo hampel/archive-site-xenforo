@@ -24,7 +24,10 @@ class LoginTest extends TestCase
 {
 	use UsesDatabaseTransactions;
 
-	protected function validate(string $login, string $password, &$error = null)
+	/**
+	 * @param \XF\Phrase|null $error
+	 */
+	protected function validate(string $login, string $password, &$error = null): ?\XF\Entity\User
 	{
 		return $this->app()->service('XF:User\Login', $login, '127.0.0.1')->validate($password, $error);
 	}

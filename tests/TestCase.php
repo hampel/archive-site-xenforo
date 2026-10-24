@@ -61,11 +61,11 @@ abstract class TestCase extends BaseTestCase
 	 * To use, create a "mock" folder relative to the tests folder, eg:
 	 * 'src/addons/MyVendor/MyAddon/tests/mock'
 	 *
-	 * @param $file
+	 * @param string $file
 	 *
 	 * @return false|string
 	 */
-	protected function getMockData($file)
+	protected function getMockData(string $file)
 	{
 		return file_get_contents(__DIR__ . '/mock/' . $file);
 	}

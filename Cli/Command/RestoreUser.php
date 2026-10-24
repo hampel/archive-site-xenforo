@@ -11,6 +11,9 @@ use Symfony\Component\Console\Question\Question;
 
 class RestoreUser extends Command
 {
+	/**
+	 * @return void
+	 */
 	protected function configure()
 	{
 		$this

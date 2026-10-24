@@ -8,6 +8,12 @@ use XF\Mvc\ParameterBag;
 
 class Archive extends AbstractController
 {
+	/**
+	 * @param string $action
+	 * @param ParameterBag $params
+	 *
+	 * @return void
+	 */
 	protected function preDispatchController($action, ParameterBag $params)
 	{
 		switch (strtolower($action))
@@ -20,11 +26,17 @@ class Archive extends AbstractController
 		}
 	}
 
+	/**
+	 * @return \XF\Mvc\Reply\Redirect
+	 */
 	public function actionIndex()
 	{
         return $this->redirect($this->buildLink('archive/protected-users'));
 	}
 
+	/**
+	 * @return \XF\Mvc\Reply\View
+	 */
 	public function actionProtectedUsers()
 	{
 		$this->setSectionContext('hampelArchiveSiteProtectedUsers');
@@ -42,6 +54,9 @@ class Archive extends AbstractController
 
 	}
 
+	/**
+	 * @return \XF\Mvc\Reply\View
+	 */
 	public function actionArchivedUsers()
 	{
 		$this->setSectionContext('hampelArchiveSiteArchivedUsers');
@@ -59,6 +74,9 @@ class Archive extends AbstractController
 
 	}
 
+    /**
+     * @return \XF\Mvc\Reply\View
+     */
     public function actionPartiallyArchivedUsers()
     {
         $this->setSectionContext('hampelArchiveSitePartiallyArchivedUsers');
@@ -76,6 +94,9 @@ class Archive extends AbstractController
 
     }
 
+	/**
+	 * @return \XF\Mvc\Reply\View
+	 */
 	public function actionActiveUsers()
 	{
 		$this->setSectionContext('hampelArchiveSiteActiveUsers');
@@ -92,6 +113,9 @@ class Archive extends AbstractController
 		return $this->view('Hampel\ArchiveSite:Tools\ActiveUsers', 'hampel_archivesite_active_users', $viewParams);
 	}
 
+	/**
+	 * @return \XF\Mvc\Reply\View
+	 */
 	public function actionArchiveUsers()
 	{
 		$this->setSectionContext('hampelArchiveSiteArchiveUsers');
@@ -112,6 +136,9 @@ class Archive extends AbstractController
 		return $this->view('Hampel\ArchiveSite:Tools\ArchiveUsers', 'hampel_archivesite_archive_users', $viewParams);
 	}
 
+	/**
+	 * @return \XF\Mvc\Reply\Error|\XF\Mvc\Reply\Redirect
+	 */
 	public function actionArchiveUsersAction()
 	{
 		$this->setSectionContext('hampelArchiveSiteArchiveUsers');

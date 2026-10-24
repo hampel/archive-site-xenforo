@@ -28,7 +28,7 @@ class ProtectedUsers
 	 * Every user id an archive run must leave alone, from config.php. Super admins are protected
 	 * as well, and are added by Repository\ArchiveUsers::protectedUsers() rather than here.
 	 *
-	 * @return array
+	 * @return array<int|string> as config.php gives them, not cast to int
 	 */
 	public static function get()
 	{
@@ -42,6 +42,11 @@ class ProtectedUsers
 		return $userids;
 	}
 
+	/**
+	 * @param int|string $userid
+	 *
+	 * @return bool
+	 */
 	public static function isProtected($userid)
 	{
 		return in_array($userid, self::get());
@@ -63,7 +68,7 @@ class ProtectedUsers
 	 * did before. Measured 2026-10-10 rather than reasoned about, because a config.php generated
 	 * from a template is the likeliest place for an empty parent to appear.
 	 *
-	 * @return array ids that are no longer protected; empty when nothing is being discarded
+	 * @return int[] ids that are no longer protected; empty when nothing is being discarded
 	 */
 	public static function ignoredLegacyIds()
 	{
@@ -82,7 +87,7 @@ class ProtectedUsers
 	 * The deprecated key's ids, normalised the way get() normalises the current one, and empty when
 	 * the key is not set at all.
 	 *
-	 * @return array
+	 * @return array<int|string>
 	 */
 	public static function legacyIds()
 	{

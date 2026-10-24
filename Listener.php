@@ -21,7 +21,9 @@ class Listener
 	 * fired, so on a forum without it this method is never called and costs nothing. Keep it to
 	 * arrays of strings for the same reason.
 	 *
-	 * @param array $declarations
+	 * @param array<string, array{options?: string[], config?: array<string, string[]>}> $declarations
+	 *
+	 * @return void
 	 */
 	public static function adminApiRedaction(array &$declarations)
 	{

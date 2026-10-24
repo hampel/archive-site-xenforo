@@ -14,7 +14,13 @@ class Setup extends AbstractSetup
 		$this->createTables();
 	}
 
-    // upgrade to 2.0.0
+    /**
+     * Upgrade to 2.0.0.
+     *
+     * @param array<string, mixed> $stepParams
+     *
+     * @return void
+     */
     public function upgrade2000070Step1(array $stepParams = [])
     {
         $this->createTables();
@@ -24,6 +30,10 @@ class Setup extends AbstractSetup
      * Gated on 2.2.0's own id rather than the alpha's, so it runs for every install below the
      * release - and guarded with columnExists(), because a step numbered at the release re-runs
      * for anyone who took a pre-release and ADD COLUMN is not idempotent.
+     *
+     * @param array<string, mixed> $stepParams
+     *
+     * @return void
      */
     public function upgrade2020070Step1(array $stepParams = [])
     {
@@ -52,6 +62,11 @@ class Setup extends AbstractSetup
 	 * Guarded on the XenForo version because the declared floor is 2.2, where neither
 	 * AbstractSetup::enqueuePostUpgradeCleanUp() nor XF\Job\FileCleanUp exists. An unguarded
 	 * call is a fatal during the upgrade, not a no-op.
+	 *
+	 * @param int|null $previousVersion
+	 * @param array<string, mixed> $stateChanges
+	 *
+	 * @return void
 	 */
 	public function postUpgrade($previousVersion, array &$stateChanges)
 	{
@@ -66,6 +81,9 @@ class Setup extends AbstractSetup
         $this->schemaManager()->dropTable('xf_archivesite_user');
 	}
 
+    /**
+     * @return void
+     */
     protected function createTables()
     {
         $this->schemaManager()->createTable('xf_archivesite_user', function(Create $table)

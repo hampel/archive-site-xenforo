@@ -19,13 +19,15 @@ class ArchiveUsersTest extends TestCase
 {
 	use UsesDatabaseTransactions;
 
-	protected function repo()
+	protected function repo(): \Hampel\ArchiveSite\Repository\ArchiveUsers
 	{
 		return $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
 	}
 
 	/**
 	 * Every account, keyed by id, with what an archive run could change.
+	 *
+	 * @return array<array<string, mixed>>
 	 */
 	protected function accounts(): array
 	{
@@ -38,6 +40,9 @@ class ArchiveUsersTest extends TestCase
 		);
 	}
 
+	/**
+	 * @return int[]
+	 */
 	protected function protectedIdsOrSkip(): array
 	{
 		$ids = $this->repo()->protectedUserIds();
@@ -67,6 +72,9 @@ class ArchiveUsersTest extends TestCase
 		return $user->user_id;
 	}
 
+	/**
+	 * @param array<string, mixed> $account one row of accounts()
+	 */
 	protected function assertArchived(array $account, string $why): void
 	{
 		$this->assertSame('disabled', $account['user_state'], $why);
@@ -75,6 +83,10 @@ class ArchiveUsersTest extends TestCase
 		$this->assertNotNull($account['previous_state'], $why);
 	}
 
+	/**
+	 * @param array<string, mixed> $before one row of accounts()
+	 * @param array<string, mixed> $after
+	 */
 	protected function assertUntouched(array $before, array $after, string $why): void
 	{
 		$this->assertSame($before, $after, $why);

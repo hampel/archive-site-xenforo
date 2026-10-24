@@ -28,7 +28,7 @@ class ArchiveUsers extends Repository
 	 * it would exclude every ordinary user instead of the admins. Excluding by ID also keeps one
 	 * definition of "protected" for the finders, the archive job and archiveUser()/restoreUser().
 	 *
-	 * @return array
+	 * @return int[]
 	 */
 	public function protectedUserIds()
 	{
@@ -110,6 +110,9 @@ class ArchiveUsers extends Repository
             ]);
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function archiveUser(User $user)
 	{
         // safety check, we shouldn't be passing these users in, but just in case
@@ -168,6 +171,9 @@ class ArchiveUsers extends Repository
 	}
 
 
+	/**
+	 * @return bool
+	 */
 	public function restoreUser(User $user)
 	{
         // safety check, we shouldn't be passing these users in, but just in case
@@ -241,6 +247,7 @@ class ArchiveUsers extends Repository
      * the account owns, and XenForo's own cron deletes every row in it over a day old.
      *
      * @param User $user
+     * @return void
      */
     protected function clearCredentials(User $user)
     {

@@ -2,6 +2,11 @@
 
 class User extends XFCP_User
 {
+    /**
+     * @param bool $recentlyActive
+     *
+     * @return $this
+     */
     public function isValidUser($recentlyActive = false)
     {
         // replace this function to include archived users as valid so stats remain accurate

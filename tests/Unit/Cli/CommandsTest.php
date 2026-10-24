@@ -342,9 +342,16 @@ class CommandsTest extends TestCase
 	{
 		$offenders = [];
 
-		foreach (glob(dirname(__DIR__, 3) . '/Cli/Command/*.php') AS $path)
+		// a scan of no files would pass, so finding none is a failure rather than a clean result
+		$paths = glob(dirname(__DIR__, 3) . '/Cli/Command/*.php') ?: [];
+		$this->assertNotEmpty($paths, 'no command classes found to scan');
+
+		foreach ($paths AS $path)
 		{
-			foreach (file($path) AS $number => $line)
+			$lines = file($path);
+			$this->assertNotFalse($lines, "could not read $path");
+
+			foreach ($lines AS $number => $line)
 			{
 				// the four backslashes are two in the regex, which is one literal backslash: '\X'
 				// would be PCRE's grapheme-cluster escape, and a guard written that way matched

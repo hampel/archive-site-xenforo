@@ -44,6 +44,9 @@ class Validate extends Command
 		'xfRebuildJob-restore-all-users' => 'archive:restore-all-users',
 	];
 
+	/**
+	 * @return void
+	 */
 	protected function configure()
 	{
 		$this
@@ -111,6 +114,8 @@ class Validate extends Command
 	 * is reported for whoever is looking without being counted. A warning here would make
 	 * `--strict` exit 2 on every such forum until the key is renamed, which would make the flag
 	 * useless to a monitor on exactly the forums that have not migrated yet.
+	 *
+	 * @return void
 	 */
 	protected function configKeys()
 	{
@@ -155,6 +160,8 @@ class Validate extends Command
 	 * The one thing standing between an archive run and a forum nobody can log in to. Both bulk
 	 * commands abort when it resolves empty; the admin control panel's own button does not, which
 	 * is why this is a failure rather than a warning.
+	 *
+	 * @return void
 	 */
 	protected function protectedList()
 	{
@@ -174,6 +181,8 @@ class Validate extends Command
 	/**
 	 * An id in config.php that is not a user means somebody meant to protect an account and has
 	 * not. Nothing is at risk from the id itself, so it is a warning - but it is always a mistake.
+	 *
+	 * @return void
 	 */
 	protected function listedAccountsExist()
 	{
@@ -194,6 +203,9 @@ class Validate extends Command
 			: $this->checkOk('listed accounts', count($listed) . ' listed, all exist');
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function archiveTable()
 	{
 		$db = \XF::db();
@@ -213,6 +225,8 @@ class Validate extends Command
 	 * Installing this add-on stops mail to every ordinary member, which is the point on an
 	 * archived forum. The config switch that turns that off is for a development copy, so finding
 	 * it on is worth saying out loud wherever this runs.
+	 *
+	 * @return void
 	 */
 	protected function mailRestriction()
 	{
@@ -225,6 +239,8 @@ class Validate extends Command
 	 * The extensions name the pre-2.3 core class spellings, so a missing target means either a
 	 * broken release or a XenForo that has stopped aliasing them - and either way the add-on's
 	 * behaviour is silently core's.
+	 *
+	 * @return void
 	 */
 	protected function classExtensions()
 	{
@@ -287,6 +303,8 @@ class Validate extends Command
 	 * A modification that applies nowhere is dead, and the page it should have changed renders as
 	 * stock. One exception is correct rather than a fault: the gallery modification cannot apply
 	 * on a forum without XenForo Media Gallery, because the template it targets does not exist.
+	 *
+	 * @return void
 	 */
 	protected function templateModifications()
 	{
@@ -346,6 +364,8 @@ class Validate extends Command
 	/**
 	 * Everything switched off is a warning, not a pass: a forum hiding its features from guests
 	 * with no message explaining why is working exactly as configured and telling nobody anything.
+	 *
+	 * @return void
 	 */
 	protected function guestMessages()
 	{
@@ -369,6 +389,8 @@ class Validate extends Command
 	 * turns it into something a monitor hears about. A forum running only the guest-hiding half of
 	 * this add-on will warn for as long as it does so, which is correct: the archiving half is
 	 * switched on and doing nothing.
+	 *
+	 * @return void
 	 */
 	protected function accountState()
 	{
@@ -432,6 +454,8 @@ class Validate extends Command
 	 * A warning and not a failure: the run can be finished, and the forum is not broken by the row
 	 * existing. It pairs with the archiving row above - incomplete with a pending run means resume
 	 * it, incomplete without one means start again.
+	 *
+	 * @return void
 	 */
 	protected function pendingRun()
 	{

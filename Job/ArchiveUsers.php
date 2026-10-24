@@ -77,6 +77,9 @@ class ArchiveUsers extends AbstractRebuildJob
 		$db->commit();
 	}
 
+    /**
+     * @return void
+     */
     protected function processUser(User $user)
     {
         $this->getArchiveRepo()->archiveUser($user);
@@ -89,6 +92,9 @@ class ArchiveUsers extends AbstractRebuildJob
 		return sprintf('%s... %s (%s)', $actionPhrase, $typePhrase, $this->data['start']);
 	}
 
+    /**
+     * @return \XF\Phrase
+     */
     protected function getActionPhrase()
     {
         return \XF::phrase('hampel_archivesite_archiving');

@@ -4,10 +4,11 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Copied from Hampel/Monolog's Cli/RendersReport.php, namespace changed, with three typed
- * properties and the `void` return types removed - this add-on declares XenForo 2.2, so PHP 7.0,
- * where Monolog declares 7.4. **Nothing else may be changed locally**: a fix belongs in Monolog's
- * copy and is taken again from there, so that a command written against either reads the same.
+ * Copied from Hampel/Monolog's Cli/RendersReport.php, namespace changed, with the four property
+ * types and the `void` return types moved into docblocks - this add-on declares XenForo 2.2, so
+ * PHP 7.0, where Monolog declares 7.4. **Nothing else may be changed locally**: a fix belongs in
+ * Monolog's copy and is taken again from there, so that a command written against either reads
+ * the same.
  *
  * Settings rows and check rows, in the same layout as hampel/console-report's ReportsSettings and
  * RendersChecks - which this cannot use, because that package needs PHP 8.3. The reason is one
@@ -55,6 +56,9 @@ trait RendersReport
 	 */
 	abstract protected function errorLogPrefix(): string;
 
+	/**
+	 * @return void
+	 */
 	protected function heading(string $title)
 	{
 		$this->report->writeln('');
@@ -64,6 +68,8 @@ trait RendersReport
 	/**
 	 * A setting and its value, with a dotted leader. An empty value reads as `not set`, never blank:
 	 * a blank line reads as a setting that is fine.
+	 *
+	 * @return void
 	 */
 	protected function detail(string $label, string $value)
 	{
@@ -99,29 +105,43 @@ trait RendersReport
 
 	/**
 	 * A heading above a run of check rows, with a blank line before it.
+	 *
+	 * @return void
 	 */
 	protected function checkSection(string $title)
 	{
 		$this->heading($title);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function checkOk(string $label, string $detail = '')
 	{
 		$this->checkResult('<info>[ ok ]</info>', $label, $detail);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function checkWarn(string $label, string $detail = '')
 	{
 		$this->checkWarned = true;
 		$this->checkResult('<comment>[warn]</comment>', $label, $detail);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function checkFail(string $label, string $detail = '')
 	{
 		$this->checkFailed = true;
 		$this->checkResult('<error>[fail]</error>', $label, $detail);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function checkSkip(string $label, string $detail = '')
 	{
 		$this->checkResult('[    ]', $label, $detail);
@@ -176,6 +196,9 @@ trait RendersReport
 		}
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function checkResult(string $marker, string $label, string $detail)
 	{
 		$padding = str_repeat(' ', max(0, $this->checkLabelWidth - mb_strlen($label)));

@@ -13,16 +13,25 @@ class ArchiveAll extends AbstractRebuildCommand
         return 'archive-all-users';
     }
 
+    /**
+     * @return string
+     */
     protected function getRebuildDescription()
     {
         return 'Archive all non-protected users by removing their password';
     }
 
+    /**
+     * @return string
+     */
     protected function getRebuildClass()
     {
         return 'Hampel\ArchiveSite:ArchiveUsers';
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         parent::configure();

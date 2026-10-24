@@ -11,6 +11,9 @@ use Symfony\Component\Console\Question\Question;
 
 class ArchiveUser extends Command
 {
+	/**
+	 * @return void
+	 */
 	protected function configure()
 	{
 		$this

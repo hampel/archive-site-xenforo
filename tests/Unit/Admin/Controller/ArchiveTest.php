@@ -22,6 +22,9 @@ class ArchiveTest extends TestCase
 		$this->setVisitorAdminPermissions($admin, [], ['is_super_admin' => true]);
 	}
 
+	/**
+	 * @return int[]
+	 */
 	protected function superAdminIds(): array
 	{
 		return array_map('intval', array_values($this->app()->finder('XF:User')
@@ -218,6 +221,8 @@ class ArchiveTest extends TestCase
 	/**
 	 * Each list page and the finder it is the view of. The rows are one page of that finder, so
 	 * the total is what tells a page reading the wrong set from one reading the right set.
+	 *
+	 * @return array<string, array{string, string, string}>
 	 */
 	public static function listPages(): array
 	{
@@ -236,7 +241,7 @@ class ArchiveTest extends TestCase
 	 * has its own size. A fixed count is not enough: the protected set is the forum's super admins,
 	 * whose number the forum decides - one, here, which is what a single planted account matched.
 	 */
-	protected function plantDistinguishableSets($repo): void
+	protected function plantDistinguishableSets(\Hampel\ArchiveSite\Repository\ArchiveUsers $repo): void
 	{
 		$totals = function () use ($repo)
 		{
@@ -306,7 +311,7 @@ class ArchiveTest extends TestCase
 		$this->renderReply($reply);
 		$ours = array_filter(
 			$this->app()->templater()->getTemplateErrors(),
-			function ($error) { return preg_match('/^\w+:hampel_archivesite_/', (string) ($error['template'] ?? '')); }
+			function ($error) { return preg_match('/^\w+:hampel_archivesite_/', (string) ($error['template'] ?? '')) === 1; }
 		);
 		$this->assertSame([], array_values($ours), "the $template template raised an error");
 	}
@@ -315,6 +320,8 @@ class ArchiveTest extends TestCase
 	 * Every action but the index is a super admin's, and the guard is a default branch rather than
 	 * a list - so a page added to the index's case, or a new action given its own, is what this
 	 * catches.
+	 *
+	 * @return array<string, array{string}>
 	 */
 	public static function superAdminRoutes(): array
 	{
