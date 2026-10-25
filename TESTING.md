@@ -165,6 +165,19 @@ An extension added during a test is forgotten at teardown, and the next test the
 class with no extension at all - this add-on's own included - so such a test cannot share a run
 with anything. Worth running by hand whenever either overriding extension changes.
 
+**Static analysis runs at PHPStan level 7, in two configurations:**
+
+```bash
+vendor/bin/phpstan analyse                            # the add-on and its suite
+vendor/bin/phpstan analyse -c phpstan.floor.neon      # shipped code, read as PHP 7.1
+vendor/bin/xenforo-phpstan generate --check           # is the forum's generated set current
+```
+
+The floor configuration reads as PHP 7.1 because that is as low as PHPStan goes. It catches newer
+syntax but not a function missing from old PHP, so a run on a XenForo 2.2 forum is still what
+proves the floor. Never regenerate the set from an add-on: it is shared by every add-on analysed
+against that forum.
+
 **Every test named for a regression fails against that regression** — each was run with the
 behaviour it names removed. That is the standard to keep when adding one.
 
