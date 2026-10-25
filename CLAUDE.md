@@ -584,3 +584,8 @@ has to stay before the `mv`** — after it, the files it names have already been
 `_build/` and `rm -f` reports nothing while they ship. Adding any new root-level development file
 means adding it to that `rm` line and to `.gitattributes`; those are separate mechanisms and
 neither implies the other.
+
+**`Seed/` and `Factory/` are the exception: removed from the zip, and not `export-ignore`d.** They
+are the seeder and its factory, which need `Hampel/Seeder` and are of no use to a forum, while a
+source archive is how somebody gets a development copy, which wants them. The
+`xenforo-addon-seeding` skill has the convention.

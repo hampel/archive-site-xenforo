@@ -346,7 +346,8 @@ name**, and is the next thing to tighten.
 with `xenforo-addon-sandbox` mode 1 and add `Hampel/Seeder` from its release zip;
 `xenforo-addon-seeding` is the policy for both, and the short version is that a check which counts,
 times or archives anything needs a forum nothing else is writing to. Every figure below was
-measured on 2026-10-11, on XenForo 2.3.13 with PHP 8.3 and 56 seeded members.
+measured on XenForo 2.3.13 with PHP 8.3, on 2026-10-11 with 56 seeded members unless it gives
+another date.
 
 **The bulk commands' confirmed path, which cannot be run anywhere else.** Both commands run their
 job in the command's own process, so answering the confirmation on the development forum would
@@ -470,6 +471,33 @@ second archive row. Measured 2026-10-12: it does, and a restore afterwards put t
 All of it ran on 2026-10-12 with 30 seeded members, both bulk commands exit 0, every account
 compared individually before and after, and `xf_error_log` at 0 throughout. See `CLAUDE.md`,
 *Credentials are the exception, and clearing them is one way*.
+
+**The states only an earlier version or a stopped run leaves behind come from this add-on's own
+seeder**, because no command here can make them. It writes members already archived — as this
+version leaves them, before 2.2.0 with no scheme recorded, and before 2.2.3 still holding two-step,
+a passkey or a "stay logged in" key — and members shut and passwordless with no archive row, which
+`archive:validate` reports as partially archived:
+
+```bash
+docker exec --user 1000:1000 <instance>-xf-1 php cmd.php \
+  seeder:run Hampel/ArchiveSite:ArchiveStates \
+  -p archived=8 -p legacy=3 -p credentials=4 -p partial=3 --batch=archive-states
+```
+
+`Seed/ArchiveStatesSeeder.php` describes each parameter. Run on 2026-10-25 on XenForo 2.3.13 with
+PHP 8.3 and Seeder `1.0.0b10`, with the defaults: 18 members and 15 archive rows, `validate`
+*complete* with a `[warn]` for the 3 partial accounts. A re-run of `archive:archive-all-users`
+cleared 8 two-step rows, 2 passkeys, 4 remember keys and every `use_tfa` flag while leaving each
+recorded `previous_state` alone. `archive:restore-all-users` then put back 3 approval-queue rows,
+left the 4 passwordless members passwordless, and reset a password on the 3 rows with no scheme.
+`seeder:clean` returned every count to where it started, with no mail and no error log row.
+
+**Clean before archiving, or after restoring — not in between.** Deleting a member leaves their
+archive row, and only the rows the seeder wrote are recorded for `seeder:clean`. An archive run
+over the seeded forum writes rows for the partial accounts, and a clean straight after it leaves
+those behind.
+
+**Seeder needs XenForo 2.3 and PHP 8.1**, so none of this runs on a 2.2 floor sandbox.
 
 **Seed threads before judging a skip.** Three of the four tests that skip on a fresh instance say
 *needs a thread on the forum*, and one `seeder:run Thread -p threads=8 -p replies=4` turns all

@@ -4,6 +4,7 @@
 		"rm -fv _build/upload/src/addons/{addon_id}/composer.json _build/upload/src/addons/{addon_id}/composer.lock _build/upload/src/addons/{addon_id}/phpunit.xml _build/upload/src/addons/{addon_id}/phpstan.neon _build/upload/src/addons/{addon_id}/phpstan.floor.neon",
 		"rm -frv _build/upload/src/addons/{addon_id}/tests _build/upload/src/addons/{addon_id}/.phpunit.cache _build/upload/src/addons/{addon_id}/.phpunit.result.cache",
 		"rm -fr _build/upload/src/addons/{addon_id}/vendor",
+		"rm -frv _build/upload/src/addons/{addon_id}/Seed _build/upload/src/addons/{addon_id}/Factory",
 		"mv -v _build/upload/src/addons/{addon_id}/*.md _build/"
 	]
 }
