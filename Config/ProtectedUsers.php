@@ -65,8 +65,8 @@ class ProtectedUsers
 	 *
 	 * **An absent current key is not this case.** Settings::get() reads it with isset(), so
 	 * `$config['archiveSite'] = []` falls through to the deprecated key and protects exactly what it
-	 * did before. Measured 2026-10-10 rather than reasoned about, because a config.php generated
-	 * from a template is the likeliest place for an empty parent to appear.
+	 * did before. ProtectedUsersTest asserts both forms, because a config.php generated from a
+	 * template is the likeliest place for an empty parent to appear.
 	 *
 	 * @return int[] ids that are no longer protected; empty when nothing is being discarded
 	 */
