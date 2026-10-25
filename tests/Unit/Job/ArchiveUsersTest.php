@@ -161,8 +161,14 @@ class ArchiveUsersTest extends TestCase
 
 		$this->runJobToCompletion('Hampel\ArchiveSite:ArchiveUsers', ['protectedUsers' => $protected, 'batch' => 1]);
 
+		$ids = array_diff(array_keys($before), $protected);
+		if (!$ids)
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+
 		$after = $this->accounts();
-		foreach (array_diff(array_keys($before), $protected) AS $id)
+		foreach ($ids AS $id)
 		{
 			$this->assertArchived($after[$id], "user $id was skipped at a batch boundary");
 		}

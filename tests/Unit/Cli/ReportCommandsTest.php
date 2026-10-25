@@ -388,6 +388,11 @@ class ReportCommandsTest extends TestCase
 	 */
 	public function test_a_forum_that_has_not_archived_anybody_warns(): void
 	{
+		if (!$this->app()->repository('Hampel\ArchiveSite:ArchiveUsers')->activeUsers()->total())
+		{
+			$this->markTestSkipped('needs at least one active, non-protected user on the forum');
+		}
+
 		$tester = $this->runConsoleCommand(Validate::class);
 
 		$this->assertSame(0, $tester->getStatusCode());
