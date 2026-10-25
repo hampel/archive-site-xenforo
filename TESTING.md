@@ -512,6 +512,15 @@ forum, not the code.
 **Clean the batches by name, then check.** `seeder:list` should report nothing and the error log
 should be empty; a seeded batch left behind blocks Seeder's own uninstall, deliberately.
 
+**Upgrade from the published release whenever `Setup` gains a step between it and the new
+version**, on the 2.3 line and on the 2.2 floor: `xenforo-addon-sandbox` mode 3, with development
+off. The suite calls a step directly, and only a real upgrade runs it the way a forum does. Put the
+state the step acts on there first, under the published version, since an empty table proves
+nothing. For 2.2.4's removal of rows left by deleted members, that was ten members made through
+core's entities, eight archived and three of those deleted, then the upgrade: on 2026-10-25, on
+XenForo 2.3.13 with PHP 8.3 and on 2.2.19 with PHP 7.4, the three orphans went and the five other
+rows came through value for value. Seeder cannot run on 2.2, so a script of that size does both.
+
 ## Needs a human
 
 - **That a logged-in member still sees the What's New link.** It is the one guest-hiding
