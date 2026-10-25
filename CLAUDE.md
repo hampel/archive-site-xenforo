@@ -279,13 +279,12 @@ decision someone may want to revisit:
 - physically remove soft-deleted threads, posts, attachments and photos
 
 **Anything on that list that deletes content needs more thought than it looks, and the credential
-clearing below is not the precedent for it.** Archiving is one way by intention and restoring is
-the exceptional case (Simon, 2026-10-12), so "it would make archiving irreversible" is no longer
-the objection it was. The line that remains is what the row is *for*: a credential has no value to
-an archived forum and cannot be put back whether or not anyone tries, whereas the content is the
-thing the forum is being kept for, and `restoreUser()` quietly promises to return an account to
-what it was. Deleting a member's conversations or bookmarks breaks that promise in a way nothing in
-the restore path would say.
+clearing below is not the precedent for it.** Archiving is one way by intention and restoring is the
+exceptional case, so "it would make archiving irreversible" is not the objection to them. The line
+that remains is what the row is *for*: a credential has no value to an archived forum and cannot be
+put back whether or not anyone tries, whereas the content is the thing the forum is being kept for,
+and `restoreUser()` quietly promises to return an account to what it was. Deleting a member's
+conversations or bookmarks breaks that promise in a way nothing in the restore path would say.
 
 ## Credentials are the exception, and clearing them is one way
 
