@@ -12,7 +12,7 @@ The PHPUnit suite settles most of the last; *Automated* says what it covers and 
 | `XF\Entity\User` | adds the `ArchivedUser` relation; nothing else |
 | `XF\Finder\User` | rewrites `isValidUser()` so archived users still count as valid, keeping member counts and statistics honest |
 | `XF\Mail\Mail` | `setToUser()` **and** `setTo()` refuse any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set. The decision lives in `Mail\Restriction`, shared by both version branches |
-| `XF\Service\User\Login` | **replaces** `validate()` outright, so a non-protected user gets an "archived" message instead of "incorrect password" |
+| `XF\Service\User\Login` | **replaces** `validate()` outright, so an account this add-on archived, with no usable password and not protected, gets an "archived" message instead of "incorrect password"; every other failure takes core's path and is counted toward the brute-force limit |
 | `XF\Service\User\PasswordReset` | extends `canTriggerConfirmation()` to refuse a reset for an account this add-on has archived - keyed on the archive row, since core creates passwordless accounts of its own |
 | `XF\Widget\MembersOnline` | `render()` returns empty for guests |
 
