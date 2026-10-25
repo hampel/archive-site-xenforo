@@ -307,7 +307,7 @@ class CommandsTest extends TestCase
 
 		$this->mockRepository('Hampel\ArchiveSite:ArchiveUsers', function ($mock) use ($empty)
 		{
-			$mock->expects()->protectedUsers()->andReturns($empty);
+			$mock->shouldReceive('protectedUsers')->once()->andReturn($empty);
 		});
 	}
 
