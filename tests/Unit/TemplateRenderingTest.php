@@ -316,4 +316,119 @@ class TemplateRenderingTest extends TestCase
 		$this->assertSee($member, $birthday);
 		$this->assertNoTemplateErrorsFromThisAddOn();
 	}
+
+	public function test_followers_are_hidden_from_guests_but_shown_to_members(): void
+	{
+		$this->assertProfileListHiddenFromGuests('followers', (string) \XF::phrase('followers'));
+	}
+
+	public function test_following_is_hidden_from_guests_but_shown_to_members(): void
+	{
+		$this->assertProfileListHiddenFromGuests('following', (string) \XF::phrase('member_is_following'));
+	}
+
+	/**
+	 * member_about shows each list only when its count is non-zero and it holds someone, so both
+	 * are given; the other list is left empty, so a heading can only come from the one under test.
+	 *
+	 * @param string $list followers or following
+	 */
+	protected function assertProfileListHiddenFromGuests(string $list, string $heading): void
+	{
+		$users = $this->app()->finder('XF:User')->limit(3)->fetch()->toArray();
+		if (count($users) < 3)
+		{
+			$this->markTestSkipped('needs three users on the forum');
+		}
+		$user = array_shift($users);
+		$params = [
+			'user' => $user,
+			'followers' => [], 'followersCount' => 0,
+			'following' => [], 'followingCount' => 0,
+		];
+		$params[$list] = $users;
+		$params[$list . 'Count'] = count($users);
+
+		$this->actingAsGuest();
+		$guest = $this->renderTemplate('public:member_about', $params);
+		$this->asMember();
+		$member = $this->renderTemplate('public:member_about', $params);
+
+		$this->assertDontSee($guest, $heading);
+		$this->assertSee($member, $heading);
+		$this->assertNoTemplateErrorsFromThisAddOn();
+	}
+
+	public function test_the_lock_icon_is_hidden_from_guests_but_shown_to_members(): void
+	{
+		$thread = $this->aThread();
+		$thread->discussion_open = false; // in memory, for the render only
+		$args = ['thread' => $thread, 'forum' => $thread->Forum];
+
+		$this->actingAsGuest();
+		$guest = $this->renderMacro('public:thread_list_macros', 'item', $args);
+		$this->asMember();
+		$member = $this->renderMacro('public:thread_list_macros', 'item', $args);
+
+		// the thread itself is the positive control for the guest render
+		$this->assertSee($guest, $thread->title);
+		$this->assertDontSee($guest, 'structItem-status--locked');
+		$this->assertSee($member, 'structItem-status--locked');
+		$this->assertNoTemplateErrorsFromThisAddOn();
+	}
+
+	/**
+	 * <xf:pageaction> sets a page parameter rather than rendering markup, so the buttons are read
+	 * from there - in the HTML they would be absent for a member too.
+	 */
+	public function test_the_forum_home_page_actions_are_hidden_from_guests_but_shown_to_members(): void
+	{
+		$params = ['pageSelected' => 'forums', 'innerContent' => 'the forum list'];
+		$newPosts = (string) \XF::phrase('new_posts');
+		$templater = $this->app()->templater();
+
+		$this->actingAsGuest();
+		$templater->pageParams = [];
+		$guest = $this->renderTemplate('public:forum_overview_wrapper', $params);
+		$guestAction = $this->pageParam('pageAction');
+
+		$this->asMember();
+		$templater->pageParams = [];
+		$this->renderTemplate('public:forum_overview_wrapper', $params);
+		$memberAction = $this->pageParam('pageAction');
+
+		$this->assertSee($guest, 'the forum list');
+		$this->assertNull($guestAction);
+		$this->assertNotNull($memberAction);
+		$this->assertStringContainsString($newPosts, $memberAction);
+		$this->assertNoTemplateErrorsFromThisAddOn();
+	}
+
+	public function test_the_gallery_bb_code_is_hidden_from_guests_but_shown_to_members(): void
+	{
+		if (!\XF::isAddOnActive('XFMG'))
+		{
+			$this->markTestSkipped('needs XenForo Media Gallery installed');
+		}
+
+		// in memory, for the render only: an embed needs no attachment behind it
+		$mediaItem = $this->app()->em()->create('XFMG:MediaItem');
+		$mediaItem->setTrusted('media_id', 987654);
+		$mediaItem->setTrusted('media_type', 'embed');
+		$mediaItem->setTrusted('media_tag', '[MEDIA=youtube]archive[/MEDIA]');
+		$mediaItem->setTrusted('title', 'Archived media');
+		$args = ['mediaItem' => $mediaItem];
+		$bbCode = '[GALLERY=media, 987654]';
+
+		$this->actingAsGuest();
+		$guest = $this->renderMacro('public:xfmg_media_view_macros', 'share_sidebar', $args);
+		$this->asMember();
+		$member = $this->renderMacro('public:xfmg_media_view_macros', 'share_sidebar', $args);
+
+		// the embed's own control is the positive control for the guest render
+		$this->assertSee($guest, '[MEDIA=youtube]archive[/MEDIA]', false);
+		$this->assertDontSee($guest, $bbCode, false);
+		$this->assertSee($member, $bbCode, false);
+		$this->assertNoTemplateErrorsFromThisAddOn();
+	}
 }

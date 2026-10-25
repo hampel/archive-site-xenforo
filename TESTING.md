@@ -132,7 +132,7 @@ What it covers, by class:
 | `XF\Finder\UserTest` | an archived user counts as valid only if they were valid before archiving, and never while banned; an archived account idle for a year is not recently active |
 | `Cli\ReportCommandsTest` | `archive:config` names the key the protected list came from, reports an unset list as not set, and changes nothing; `archive:validate` fails on an empty protected list and on a modification applying nowhere, warns on the mail switch, a disabled modification, an id that is not a user, unarchived accounts (saying *not started* or *incomplete*) and accounts that cannot be restored, reports a finished forum as complete, warns when the newer `config.php` key names fewer protected ids than the deprecated one and names them, treats the deprecated key on its own as a skip rather than a warning, exits 2 for a warning only under `--strict` and 0 when there is nothing to warn about, and turns a check that throws into one `[fail]` without ending the run; warns about a bulk run left in the job queue, under the Admin CP's unique key as well as the CLI's and for a stopped restore as well as an archive, saying whether the row stored a protected list and how many ids it holds, and exits 2 for that under `--strict` where the same forum with no pending row exits 0; no log call lacks the add-on prefix |
 | `Cli\CommandsTest` | all four command classes are ones XenForo can load, since it loads every add-on's to list them; an unknown user, a super admin and a config-protected user are each refused, by the restore command too - including an account listed in `config.php` after it was archived; a run that does not answer the confirmation archives or restores nobody, and one that answers it archives and restores the named account; and both bulk commands abort, log an error and queue nothing when the protected list is empty |
-| `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and three things hidden from guests but shown to members - the latest member, the not-open notice and a birthday |
+| `TemplateRenderingTest` | the modified templates, rendered: the home message and its empty case, the end message below a thread list and below a thread, its link and new-window options, and eight things hidden from guests but shown to members - the latest member, the not-open notice, a birthday, followers, following, the lock icon in a thread list, the forum home's page actions and the gallery BB code control. The last needs XFMG and skips without it |
 
 **An empty protected list cannot be set up through job data.** `setupData()` treats an empty list
 as "not supplied yet" and refills it from the repository, so a test that passes
@@ -473,17 +473,11 @@ should be empty; a seeded batch left behind blocks Seeder's own uninstall, delib
 
 ## Needs a human
 
-- **That a logged-in member still sees the rest of what guests do not.** The suite renders the
-  latest-member widget, the not-open notice and the birthday for both, but not followers and
-  following on a profile, the lock icon in a thread list, the forum home's page actions, or the
-  What's New link for a member - the guest half of that one is the curl check above.
-  **This one has stopped needing a person and nobody has done it yet**: Seeder's
-  `following()`/`followedBy()` make a member with followers to render, and the sandbox skill's
-  *Acting as a member over HTTP* fetches a page as them. Both halves exist; the check does not.
-- **The gallery control is hidden on a forum with XFMG installed.** The modification cannot apply
-  at all without it, so an install lacking XFMG proves nothing either way - and it is the one
-  test still skipping in a seeded sandbox. **Also reachable now and also unrun**: the sandbox
-  skill adds XFMG from the dist zips and Seeder's `Media` seeder fills it.
+- **That a logged-in member still sees the What's New link.** It is the one guest-hiding
+  modification the suite cannot render, because `PAGE_CONTAINER` is the page wrapper, built by
+  XenForo's app classes rather than by a template a test renders. Its guest half is the curl check
+  above; the member half needs a page fetched as a member, which the sandbox skill's *Acting as a
+  member over HTTP* does.
 - **That an upgrade removes the files the new version dropped.** `Setup::postUpgrade()` arms
   `XF\Job\FileCleanUp`, and it runs from the job queue *after* the upgrade command returns, so an
   upgrade that reports success proves nothing about it. Run the queue, then check the add-on
