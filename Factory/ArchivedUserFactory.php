@@ -8,9 +8,8 @@ use Hampel\Seeder\Factory\AbstractFactory;
  * Development only: needs the Hampel/Seeder add-on, which is not a dependency of this one, and
  * must not ship in a release.
  *
- * It exists so that seeder:clean removes the row. Deleting a member leaves their archive row
- * behind, since nothing in this add-on hooks a member's deletion, so a row written any other way
- * would outlive the batch and be counted by archive:validate.
+ * It exists so that the row is recorded in the batch and seeder:clean names it. Deleting the
+ * member removes the row as well, from 2.2.4, so the clean usually finds it already gone.
  */
 class ArchivedUserFactory extends AbstractFactory
 {

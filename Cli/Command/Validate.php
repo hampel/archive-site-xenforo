@@ -217,8 +217,25 @@ class Validate extends Command
 			return;
 		}
 
-		$rows = (int) $db->fetchOne('SELECT COUNT(*) FROM xf_archivesite_user');
+		$rows = (int) $db->fetchOne('
+			SELECT COUNT(*)
+			FROM xf_archivesite_user AS archive
+			INNER JOIN xf_user AS user ON (user.user_id = archive.user_id)
+		');
 		$this->checkOk('archive table', $rows . ' archived account(s) recorded');
+
+		// a deleted member takes their row with them from 2.2.4, and its upgrade removes the rows
+		// earlier versions left, so one now means the table was written to by something else
+		$orphans = (int) $db->fetchOne('
+			SELECT COUNT(*)
+			FROM xf_archivesite_user AS archive
+			LEFT JOIN xf_user AS user ON (user.user_id = archive.user_id)
+			WHERE user.user_id IS NULL
+		');
+		if ($orphans)
+		{
+			$this->checkWarn('orphaned rows', $orphans . ' archive row(s) name a member who no longer exists');
+		}
 	}
 
 	/**

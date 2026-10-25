@@ -123,6 +123,36 @@ class ReportCommandsTest extends TestCase
 	}
 
 	/**
+	 * A row whose member is gone is not an archived account, so the count leaves it out and the
+	 * row is named instead: from 2.2.4 nothing this add-on does leaves one behind.
+	 */
+	public function test_an_orphaned_archive_row_warns_and_is_not_counted(): void
+	{
+		$before = $this->runConsoleCommand(Validate::class)->getDisplay();
+		$this->assertStringNotContainsString('orphaned rows', $before);
+
+		$this->writeOrphanedArchiveRow();
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertMatchesRegularExpression(
+			'/\[warn\] orphaned rows +1 archive row\(s\) name a member who no longer exists/',
+			$tester->getDisplay()
+		);
+		$this->assertSame($this->archivedCount($before), $this->archivedCount($tester->getDisplay()));
+	}
+
+	protected function archivedCount(string $display): int
+	{
+		if (!preg_match('/archive table\s+(\d+) archived account/', $display, $match))
+		{
+			$this->fail('no archive table row in the report');
+		}
+
+		return (int) $match[1];
+	}
+
+	/**
 	 * The failure that matters: with nothing protected, an archive run leaves a forum nobody can
 	 * log in to. Both bulk commands abort on it and the control panel's own button does not, so
 	 * this is the check that makes the state visible wherever anyone looks.

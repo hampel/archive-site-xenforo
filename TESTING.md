@@ -9,7 +9,7 @@ The PHPUnit suite settles most of the last; *Automated* says what it covers and 
 
 | Extends | Does |
 |---|---|
-| `XF\Entity\User` | adds the `ArchivedUser` relation; nothing else |
+| `XF\Entity\User` | adds the `ArchivedUser` relation, and `_postDelete()` deletes a deleted member's archive row after calling the parent |
 | `XF\Finder\User` | rewrites `isValidUser()` so archived users still count as valid, keeping member counts and statistics honest |
 | `XF\Mail\Mail` | `setToUser()` **and** `setTo()` refuse any recipient who is not a super admin or protected, by setting `setupError` rather than throwing - unless `allowMail` is set. The decision lives in `Mail\Restriction`, shared by both version branches |
 | `XF\Service\User\Login` | **replaces** `validate()` outright, so an account this add-on archived, with no usable password and not protected, gets an "archived" message instead of "incorrect password"; every other failure takes core's path and is counted toward the brute-force limit |
@@ -492,10 +492,10 @@ recorded `previous_state` alone. `archive:restore-all-users` then put back 3 app
 left the 4 passwordless members passwordless, and reset a password on the 3 rows with no scheme.
 `seeder:clean` returned every count to where it started, with no mail and no error log row.
 
-**Clean before archiving, or after restoring — not in between.** Deleting a member leaves their
-archive row, and only the rows the seeder wrote are recorded for `seeder:clean`. An archive run
-over the seeded forum writes rows for the partial accounts, and a clean straight after it leaves
-those behind.
+**A clean straight after an archive run should leave nothing either.** That run writes rows for
+the partial accounts, which the seeder never recorded, and from 2.2.4 a deleted member takes their
+archive row with them. That is read from the code: the run above cleaned after a restore, and
+nothing has cleaned between an archive and a restore since the fix.
 
 **Seeder needs XenForo 2.3 and PHP 8.1**, so none of this runs on a 2.2 floor sandbox.
 

@@ -245,6 +245,11 @@ another add-on creating users. `Auth` is a left join everywhere for that reason,
 and `restoreUser()` skip only the password step for such an account. Until 2.0.2 one such account
 stopped the archive job part-way, leaving every later account active.
 
+**A deleted member takes their archive row with them**, through `_postDelete()` on the `User`
+extension, after the parent. Until 2.2.4 the row stayed, and `archive:validate` counted it as an
+archived account; the 2.2.4 upgrade step deletes every row whose member is gone, and `validate` now
+counts only rows with a member behind them and warns on any other.
+
 **Keep a `User` entity in step with the database when changing its archive row.**
 `Job\Manager::runQueue()` runs every due job in one request through one entity manager, so an
 archive job and a restore job can share cached entities — and a restore once saw no archive row,

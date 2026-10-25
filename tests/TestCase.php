@@ -57,6 +57,20 @@ abstract class TestCase extends BaseTestCase
 	}
 
 	/**
+	 * An archive row for a member who does not exist, as a deleted member left behind before
+	 * 2.2.4. Write it inside a test's transaction.
+	 */
+	protected function writeOrphanedArchiveRow(): int
+	{
+		$db = $this->app()->db();
+		$userId = (int) $db->fetchOne('SELECT MAX(user_id) FROM xf_user') + 1000;
+
+		$db->insert('xf_archivesite_user', ['user_id' => $userId, 'previous_state' => 'valid']);
+
+		return $userId;
+	}
+
+	/**
 	 * Helper function to load mock data from a file (eg json)
 	 * To use, create a "mock" folder relative to the tests folder, eg:
 	 * 'src/addons/MyVendor/MyAddon/tests/mock'

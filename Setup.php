@@ -48,6 +48,25 @@ class Setup extends AbstractSetup
         }
     }
 
+    /**
+     * Until 2.2.4 deleting a member left their archive row behind, so remove the rows whose
+     * member is gone. Gated on the release's own id like the step above; a delete re-runs
+     * harmlessly for anyone who took a pre-release.
+     *
+     * @param array<string, mixed> $stepParams
+     *
+     * @return void
+     */
+    public function upgrade2020470Step1(array $stepParams = [])
+    {
+        $this->db()->query("
+            DELETE archive
+            FROM xf_archivesite_user AS archive
+            LEFT JOIN xf_user AS user ON (user.user_id = archive.user_id)
+            WHERE user.user_id IS NULL
+        ");
+    }
+
 	/**
 	 * Remove files that this add-on used to ship and no longer does.
 	 *
