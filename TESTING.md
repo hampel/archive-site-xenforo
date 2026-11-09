@@ -98,7 +98,7 @@ the intent on an archived forum and a trap anywhere else.
 **Archiving and restoring are not inverses.** Restoring resets the password to a random value, so
 a restored user cannot log in until they complete a password reset. The original hash is gone the
 moment the account is archived, by design. An account that had **no** password keeps none, which
-is what the recorded scheme is for - anything that changes how archiving records state deserves a
+is what the recorded scheme is for — anything that changes how archiving records state deserves a
 test of that case, since the account cannot tell you it was wronged.
 
 ## Automated
@@ -160,10 +160,10 @@ which is what a sandbox is for — worth doing when the rendering half changes m
 vendor/bin/phpunit tests/Isolated/ExtensionChainTest.php
 ```
 
-It holds tests that are only valid in a process where nothing has resolved the class they extend.
-An extension added during a test is forgotten at teardown, and the next test then resolves that
-class with no extension at all - this add-on's own included - so such a test cannot share a run
-with anything. Worth running by hand whenever either overriding extension changes.
+It holds tests that are only valid in a process where nothing has resolved the class they extend. An
+extension added during a test is forgotten at teardown, and the next test then resolves that class
+with no extension at all — this add-on's own included — so such a test cannot share a run with
+anything. Worth running by hand whenever either overriding extension changes.
 
 **Static analysis runs at PHPStan level 7, in two configurations:**
 
@@ -364,7 +364,7 @@ printf 'yes\n' | docker exec -i --user 1000:1000 <instance>-xf-1 php cmd.php arc
 **On the XF 2.2 floor that pipe silently declines, and the command is not at fault.** XenForo 2.2
 bundles a Symfony Console whose `Application::configureIO()` turns interactivity **off** when stdin
 is not a TTY unless `SHELL_INTERACTIVE` is set, so the question returns its default and the command
-prints *Aborting* and exits 0 - which reads exactly like a confirmation declined on purpose. Add
+prints *Aborting* and exits 0 — which reads exactly like a confirmation declined on purpose. Add
 `-e SHELL_INTERACTIVE=1` to the `docker exec` and the same pipe works. XF 2.3's newer console has
 no such check, so this only ever bites on the floor, and an administrator typing at a terminal has
 a TTY and is unaffected.
@@ -400,7 +400,7 @@ xf-cli compose run --rm --user 1000:1000 \
 ```
 
 **Seed the three states this add-on has historically mishandled**, which need Seeder 1.0.0a3 or
-later - a2 silently ignores the parameters:
+later — a2 silently ignores the parameters:
 
 ```bash
 docker exec --user 1000:1000 <instance>-xf-1 php cmd.php seeder:run User \
@@ -414,25 +414,25 @@ tested against a fixture written by hand. Config-protect one of the awkward ones
 exercised on them too. Taking all three through both bulk commands on 2026-10-12 found the add-on
 correct on every point:
 
-- **an account with no authentication row no longer stops the run** - the 2.0.2 regression - and
+- **an account with no authentication row no longer stops the run** — the 2.0.2 regression — and
   is archived with an empty `previous_scheme_class`, since there was no scheme to record;
 - **a passwordless account comes back passwordless.** It is archived with
   `previous_scheme_class` = `XF:NoPassword` and restored without being given a password it never
   had, which is the 2.2.0 fix holding through a real bulk run;
 - **a member awaiting approval comes back awaiting approval**, and the `xf_approval_queue` row
-  deleted by archiving is re-created - 3 rows, to 0, to 3.
+  deleted by archiving is re-created — 3 rows, to 0, to 3.
 
 All eight special accounts were compared **individually** before and after, not by aggregate count:
 matching totals do not prove that each account round-tripped. The error log stayed empty
 throughout.
 
 **That run also found a test asserting the wrong thing**, which is the reason to do it on a forum
-holding the population rather than a forum that happens to lack it - see `CLAUDE.md`, *The forum's
+holding the population rather than a forum that happens to lack it — see `CLAUDE.md`, *The forum's
 own `config.php` must not reach the suite*.
 
 **Check that the credentials went, because the access cycle already seeds the accounts that hold
 them.** `-p access=15` gives three members each with a connected account, two-step verification, a
-passkey, a "stay logged in" key and a pending email confirmation - three of each rather than one,
+passkey, a "stay logged in" key and a pending email confirmation — three of each rather than one,
 so that no result rests on a single account:
 
 ```bash
@@ -450,7 +450,7 @@ SELECT (SELECT COUNT(*) FROM xf_user_tfa)                           AS two_step_
 ```
 
 **Protect a credential holder, not just any account.** A protected account is one that still has
-to be able to log in, so an archive run must leave *its* two-step and passkeys alone - that
+to be able to log in, so an archive run must leave *its* two-step and passkeys alone — that
 negative matters as much as the clearing, and it is the only thing the counts above cannot show on
 their own. Listing a two-step member and a passkey member in `config.php` makes every "after"
 figure land on exactly their holdings, which is what the run below measured: 12 two-step rows to 4,
@@ -464,7 +464,7 @@ backup codes beside any provider.
 **Then do what a forum archived by an earlier version has to do**, which no other check covers:
 archive, give one archived account a two-step provider back through core's repository, and run
 `archive:archive-all-users` again. The rows must go **and** that account's `previous_state` must
-still read what it was before the first run - `valid`, not the `disabled` it now is - with no
+still read what it was before the first run — `valid`, not the `disabled` it now is — with no
 second archive row. Measured 2026-10-12: it does, and a restore afterwards put the account back to
 `valid`. **That is what makes *run the command again* safe advice** for a forum already archived.
 
