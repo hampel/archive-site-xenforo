@@ -31,7 +31,7 @@ class Archive extends AbstractController
 	 */
 	public function actionIndex()
 	{
-        return $this->redirect($this->buildLink('archive/protected-users'));
+        return $this->redirect($this->buildLink('archive-site/protected-users'));
 	}
 
 	/**
@@ -154,14 +154,14 @@ class Archive extends AbstractController
 			return $this->error(\XF::phrase('hampel_archivesite_you_must_confirm_archive_to_proceed'));
 		}
 
-		$this->app->jobManager()->enqueueUnique('archiveUsers', 'Hampel\ArchiveSite:ArchiveUsers', [
+		$this->app->jobManager()->enqueueUnique('hampelArchiveSiteArchiveUsers', 'Hampel\ArchiveSite:ArchiveUsers', [
 			'protectedUsers' => $this->getArchiveRepo()->protectedUserIds()
 		]);
 
 		$reply = $this->redirect(
 			$this->buildLink('tools/run-job', null, [
-				'only' => 'archiveUsers',
-				'_xfRedirect' => $this->buildLink('archive/archive-users')
+				'only' => 'hampelArchiveSiteArchiveUsers',
+				'_xfRedirect' => $this->buildLink('archive-site/archive-users')
 			])
 		);
 		$reply->setPageParam('skipManualJobRun', true);

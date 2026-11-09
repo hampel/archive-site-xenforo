@@ -1,10 +1,10 @@
 <xf:title>{{ phrase('hampel_archivesite_active_users') }}</xf:title>
 
-<div class="blockMessage">{{ phrase('hampel_archivesite_active_users_explain', {'link': link('archive/archive-users')}) }}</div>
+<div class="blockMessage">{{ phrase('hampel_archivesite_active_users_explain', {'link': link('archive-site/archive-users')}) }}</div>
 
 <xf:if is="$users is not empty">
 	
-	<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_active_users_found', {'link': link('archive/archive-users')}) }}</div>
+	<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_active_users_found', {'link': link('archive-site/archive-users')}) }}</div>
 	
 	<div class="block-container">
 		<h2 class="block-header">{{ phrase('hampel_archivesite_users_who_can_still_log_in') }}</h2>
@@ -32,7 +32,7 @@
 	</div>
 	
 	<xf:pagenav page="{$page}" perpage="{$perPage}" total="{$total}"
-				link="archive/active-users"
+				link="archive-site/active-users"
 				wrapperclass="block-outer block-outer--after" />	
 <xf:else />
 	<div class="blockMessage blockMessage--success blockMessage--iconic">{{ phrase('hampel_archivesite_no_active_users_found') }}</div>

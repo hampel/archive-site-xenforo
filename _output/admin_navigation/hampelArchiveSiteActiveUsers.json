@@ -1,10 +1,11 @@
 {
     "parent_navigation_id": "hampelArchiveSite",
     "display_order": 4,
-    "link": "archive/active-users",
+    "link": "archive-site/active-users",
     "icon": "",
     "admin_permission_id": "user",
     "debug_only": false,
     "development_only": false,
+    "super_admin_only": false,
     "hide_no_children": false
 }

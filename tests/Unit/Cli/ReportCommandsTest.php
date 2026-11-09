@@ -558,12 +558,26 @@ class ReportCommandsTest extends TestCase
 	 */
 	public function test_a_run_stopped_from_the_admin_cp_is_recognised_too(): void
 	{
-		$this->enqueueStoppedRun('archiveUsers', ['protectedUsers' => [1], 'start' => 7]);
+		$this->enqueueStoppedRun('hampelArchiveSiteArchiveUsers', ['protectedUsers' => [1], 'start' => 7]);
 
 		$tester = $this->runConsoleCommand(Validate::class);
 
 		$this->assertSame(0, $tester->getStatusCode());
 		$this->assertStringContainsString('the Admin CP archive run pending at user 7', $tester->getDisplay());
+	}
+
+	/**
+	 * Before 2.2.4 the Admin CP enqueued under the unprefixed `archiveUsers`, and a run stopped
+	 * then is still in the queue under that key after upgrading.
+	 */
+	public function test_a_run_stopped_from_the_admin_cp_before_the_key_was_renamed_is_recognised(): void
+	{
+		$this->enqueueStoppedRun('archiveUsers', ['protectedUsers' => [1], 'start' => 9]);
+
+		$tester = $this->runConsoleCommand(Validate::class);
+
+		$this->assertSame(0, $tester->getStatusCode());
+		$this->assertStringContainsString('the Admin CP archive run pending at user 9', $tester->getDisplay());
 	}
 
 	public function test_a_stopped_restore_run_is_reported_as_well(): void

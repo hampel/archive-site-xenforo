@@ -1,6 +1,6 @@
 {
     "route_type": "admin",
-    "route_prefix": "archive",
+    "route_prefix": "archive-site",
     "sub_name": "",
     "format": "",
     "build_class": "",

@@ -47,7 +47,7 @@ class ArchiveTest extends TestCase
 		$this->actingAsSuperAdmin();
 		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
 
-		$reply = $this->dispatch('archive/active-users', 'admin');
+		$reply = $this->dispatch('archive-site/active-users', 'admin');
 
 		$this->assertReplyTemplate($reply, 'hampel_archivesite_active_users');
 		$total = $this->replyParam($reply, 'total');
@@ -63,7 +63,7 @@ class ArchiveTest extends TestCase
 	{
 		$this->actingAsSuperAdmin();
 
-		$reply = $this->dispatch('archive/active-users', 'admin');
+		$reply = $this->dispatch('archive-site/active-users', 'admin');
 
 		$listed = array_map('intval', $this->replyParam($reply, 'users')->keys());
 		$this->assertSame([], array_values(array_intersect($this->superAdminIds(), $listed)));
@@ -78,7 +78,7 @@ class ArchiveTest extends TestCase
 		$this->actingAsSuperAdmin();
 		$repo = $this->app()->repository('Hampel\ArchiveSite:ArchiveUsers');
 
-		$reply = $this->dispatch('archive/archive-users', 'admin');
+		$reply = $this->dispatch('archive-site/archive-users', 'admin');
 
 		// assertReplyParam()'s third argument is a failure message, so these asserted only that
 		// each parameter existed until the framework started refusing a value there
@@ -99,7 +99,7 @@ class ArchiveTest extends TestCase
 
 		$this->actingAsSuperAdmin();
 
-		$reply = $this->dispatch('archive/archive-users/action', 'admin', [
+		$reply = $this->dispatch('archive-site/archive-users/action', 'admin', [
 			'confirm_archive' => '1',
 		], [], 'POST');
 
@@ -124,7 +124,7 @@ class ArchiveTest extends TestCase
 
 			$this->actingAsSuperAdmin();
 
-			$reply = $this->dispatch('archive/archive-users/action', 'admin', $input, [], 'POST');
+			$reply = $this->dispatch('archive-site/archive-users/action', 'admin', $input, [], 'POST');
 
 			$this->assertReplyIsError($reply, null, null, "$what was not refused");
 			$this->assertNoJobsQueued();
@@ -142,7 +142,7 @@ class ArchiveTest extends TestCase
 
 		$this->actingAsSuperAdmin();
 
-		$reply = $this->dispatch('archive/archive-users/action', 'admin', [
+		$reply = $this->dispatch('archive-site/archive-users/action', 'admin', [
 			'confirm_archive' => '1',
 			'actions' => ['archive' => '1'],
 		], [], 'POST');
@@ -152,7 +152,7 @@ class ArchiveTest extends TestCase
 		$this->assertJobQueuedTimes('Hampel\ArchiveSite:ArchiveUsers', 1);
 		$this->assertJobQueued('Hampel\ArchiveSite:ArchiveUsers', function ($job) use ($protected)
 		{
-			return $job['unique_key'] === 'archiveUsers'
+			return $job['unique_key'] === 'hampelArchiveSiteArchiveUsers'
 				&& $job['execute_data']['protectedUsers'] === $protected;
 		});
 	}
@@ -167,7 +167,7 @@ class ArchiveTest extends TestCase
 		$this->fakesJobs();
 		$this->actingAsSuperAdmin();
 
-		$reply = $this->dispatchWithoutCsrfToken('archive/archive-users/action', 'admin', [
+		$reply = $this->dispatchWithoutCsrfToken('archive-site/archive-users/action', 'admin', [
 			'confirm_archive' => '1',
 			'actions' => ['archive' => '1'],
 		]);
@@ -182,7 +182,7 @@ class ArchiveTest extends TestCase
 
 		$this->actingAsSuperAdmin();
 
-		$reply = $this->dispatch('archive/archive-users/action', 'admin', [], [], 'GET');
+		$reply = $this->dispatch('archive-site/archive-users/action', 'admin', [], [], 'GET');
 
 		$this->assertReplyIsError($reply, 405);
 		$this->assertNoJobsQueued();
@@ -199,7 +199,7 @@ class ArchiveTest extends TestCase
 		$admin = $this->actingAsMember(['is_admin' => true]);
 		$this->setVisitorAdminPermissions($admin, ['user' => true]);
 
-		$this->assertReplyIsError($this->dispatch('archive/archive-users/action', 'admin'), 403);
+		$this->assertReplyIsError($this->dispatch('archive-site/archive-users/action', 'admin'), 403);
 	}
 
 	/**
@@ -211,7 +211,7 @@ class ArchiveTest extends TestCase
 		$admin = $this->actingAsMember(['is_admin' => true]);
 		$this->setVisitorAdminPermissions($admin, ['user' => true]);
 
-		$reply = $this->dispatch('archive/active-users', 'admin');
+		$reply = $this->dispatch('archive-site/active-users', 'admin');
 
 		$this->assertReplyIsError($reply, 403);
 	}
@@ -227,10 +227,10 @@ class ArchiveTest extends TestCase
 	public static function listPages(): array
 	{
 		return [
-			'protected' => ['archive/protected-users', 'hampel_archivesite_protected_users', 'protectedUsers'],
-			'archived' => ['archive/archived-users', 'hampel_archivesite_archived_users', 'archivedUsers'],
-			'partially archived' => ['archive/partially-archived-users', 'hampel_archivesite_partially_archived_users', 'partiallyArchivedUsers'],
-			'active' => ['archive/active-users', 'hampel_archivesite_active_users', 'activeUsers'],
+			'protected' => ['archive-site/protected-users', 'hampel_archivesite_protected_users', 'protectedUsers'],
+			'archived' => ['archive-site/archived-users', 'hampel_archivesite_archived_users', 'archivedUsers'],
+			'partially archived' => ['archive-site/partially-archived-users', 'hampel_archivesite_partially_archived_users', 'partiallyArchivedUsers'],
+			'active' => ['archive-site/active-users', 'hampel_archivesite_active_users', 'activeUsers'],
 		];
 	}
 
@@ -326,11 +326,11 @@ class ArchiveTest extends TestCase
 	public static function superAdminRoutes(): array
 	{
 		return [
-			'protected' => ['archive/protected-users'],
-			'archived' => ['archive/archived-users'],
-			'partially archived' => ['archive/partially-archived-users'],
-			'active' => ['archive/active-users'],
-			'archive confirmation' => ['archive/archive-users'],
+			'protected' => ['archive-site/protected-users'],
+			'archived' => ['archive-site/archived-users'],
+			'partially archived' => ['archive-site/partially-archived-users'],
+			'active' => ['archive-site/active-users'],
+			'archive confirmation' => ['archive-site/archive-users'],
 		];
 	}
 
@@ -352,9 +352,9 @@ class ArchiveTest extends TestCase
 		$admin = $this->actingAsMember(['is_admin' => true]);
 		$this->setVisitorAdminPermissions($admin, ['user' => true]);
 
-		$reply = $this->dispatch('archive', 'admin');
+		$reply = $this->dispatch('archive-site', 'admin');
 
 		$this->assertReplyIsRedirect($reply);
-		$this->assertStringContainsString('archive/protected-users', $reply->getUrl());
+		$this->assertStringContainsString('archive-site/protected-users', $reply->getUrl());
 	}
 }

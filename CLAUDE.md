@@ -359,8 +359,15 @@ every pending manual job** with no per-job confirmation and nothing naming them.
 because it went wrong is restarted by an administrator clearing what reads as a stale cache rebuild.
 
 **The Admin CP and the CLI use different unique keys for the same job** —
-`xfRebuildJob-archive-all-users` against `archiveUsers` — so neither can resume the other's run and
-both rows can exist at once.
+`xfRebuildJob-archive-all-users` against `hampelArchiveSiteArchiveUsers` — so neither can resume the
+other's run and both rows can exist at once. The Admin CP's key was the unprefixed `archiveUsers`
+until 2.2.4, which any other add-on could have enqueued over; `validate` still recognises a row
+under it, since a run stopped before upgrading is still queued that way.
+
+**The Admin CP pages live under the `archive-site` route, `archive` until 2.2.4**, for the same
+reason: a route prefix is a unique key, and `archive` is the name the next archiving add-on would
+reach for. The navigation entries and templates name the prefix literally, so a rename has to
+change every `link()` as well as the route.
 
 **Whether the row carries a protected list is what decides where a resume gets its list from.**
 `AbstractRebuildJob::run()` ends in `resume()`, which carries the data `setupData()` resolved —

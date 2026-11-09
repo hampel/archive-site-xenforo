@@ -35,10 +35,12 @@ class Validate extends Command
 	 *
 	 * **The Admin CP and the CLI use different keys for the same job**, so neither can resume the
 	 * other's run and both rows can exist at once: `AbstractRebuildCommand` builds
-	 * `xfRebuildJob-<rebuild name>`, while `Admin\Controller\Archive` enqueues `archiveUsers`. The
-	 * Admin CP has no bulk restore, which is why there are three and not four.
+	 * `xfRebuildJob-<rebuild name>`, while `Admin\Controller\Archive` enqueues
+	 * `hampelArchiveSiteArchiveUsers`. The Admin CP has no bulk restore. `archiveUsers` is the key
+	 * it used before 2.2.4, kept so that a run stopped under an earlier version is still found.
 	 */
 	const BULK_JOB_KEYS = [
+		'hampelArchiveSiteArchiveUsers' => 'the Admin CP archive run',
 		'archiveUsers' => 'the Admin CP archive run',
 		'xfRebuildJob-archive-all-users' => 'archive:archive-all-users',
 		'xfRebuildJob-restore-all-users' => 'archive:restore-all-users',

@@ -10,11 +10,11 @@
 	<div class="blockMessage blockMessage--success blockMessage--iconic">{{ phrase('hampel_archivesite_all_active_users_archived') }}</div>	
 <xf:else />
 	<xf:if is="$active > 0">
-		<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_active_users_found', {'link': link('archive/archive-users')}) }}</div>
+		<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_active_users_found', {'link': link('archive-site/archive-users')}) }}</div>
 	</xf:if>
 	
 	<xf:if is="$partiallyArchived > 0">
-		<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_partially_archived_users_found', {'link': link('archive/archive-users')}) }}</div>	
+		<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_partially_archived_users_found', {'link': link('archive-site/archive-users')}) }}</div>	
 	</xf:if>
 
 	<div class="blockMessage blockMessage--warning blockMessage--iconic">{{ phrase('hampel_archivesite_archive_warning') }}</div>		
@@ -26,33 +26,33 @@
 	<xf:formrow label="{{ phrase('hampel_archivesite_protected_users') }}">
 		{$protected|number}
 		<span role="presentation" aria-hidden="true">&middot;</span>
-		<a href="{{ link('archive/protected-users') }}">{{ phrase('hampel_archivesite_view_protected_users') }}</a>
+		<a href="{{ link('archive-site/protected-users') }}">{{ phrase('hampel_archivesite_view_protected_users') }}</a>
 	</xf:formrow>
 
 	<xf:formrow label="{{ phrase('hampel_archivesite_active_users') }}">
 		{$active|number}
 		<span role="presentation" aria-hidden="true">&middot;</span>
-		<a href="{{ link('archive/active-users') }}">{{ phrase('hampel_archivesite_view_active_users') }}</a>
+		<a href="{{ link('archive-site/active-users') }}">{{ phrase('hampel_archivesite_view_active_users') }}</a>
 	</xf:formrow>
 
 	<xf:if is="$partiallyArchived > 0">
 		<xf:formrow label="{{ phrase('hampel_archivesite_partially_archived_users') }}">
 			{$partiallyArchived|number}
 			<span role="presentation" aria-hidden="true">&middot;</span>
-			<a href="{{ link('archive/partially-archived-users') }}">{{ phrase('hampel_archivesite_view_partially_archived_users') }}</a>
+			<a href="{{ link('archive-site/partially-archived-users') }}">{{ phrase('hampel_archivesite_view_partially_archived_users') }}</a>
 		</xf:formrow>		
 	</xf:if>
 	
 	<xf:formrow label="{{ phrase('hampel_archivesite_archived_users') }}">
 		{$archived|number}
 		<span role="presentation" aria-hidden="true">&middot;</span>
-		<a href="{{ link('archive/archived-users') }}">{{ phrase('hampel_archivesite_view_archived_users') }}</a>
+		<a href="{{ link('archive-site/archived-users') }}">{{ phrase('hampel_archivesite_view_archived_users') }}</a>
 	</xf:formrow>		
 </div>
 
 <hr class="formRowSep" />
 
-<xf:form action="{{ link('archive/archive-users/action') }}" class="block">		
+<xf:form action="{{ link('archive-site/archive-users/action') }}" class="block">		
 	<div class="block-container">
 		<div class="block-body">
 			<xf:checkboxrow explain="{{ phrase('hampel_archivesite_protected_users_will_not_be_archived') }}">

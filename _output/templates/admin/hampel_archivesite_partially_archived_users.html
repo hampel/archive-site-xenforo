@@ -1,6 +1,6 @@
 <xf:title>{{ phrase('hampel_archivesite_partially_archived_users') }}</xf:title>
 
-<div class="blockMessage">{{ phrase('hampel_archivesite_partially_archived_users_explain', {'link': link('archive/archive-users')}) }}</div>
+<div class="blockMessage">{{ phrase('hampel_archivesite_partially_archived_users_explain', {'link': link('archive-site/archive-users')}) }}</div>
 
 <xf:if is="$users is not empty">
 	<div class="block-container">
@@ -29,7 +29,7 @@
 	</div>
 	
 	<xf:pagenav page="{$page}" perpage="{$perPage}" total="{$total}"
-				link="archive/archived-users"
+				link="archive-site/archived-users"
 				wrapperclass="js-filterHide block-outer block-outer--after" />		
 <xf:else />
 	<div class="blockMessage">{{ phrase('hampel_archivesite_no_users') }}</div>
