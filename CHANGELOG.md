@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+2.2.4 (2026-11-10)
+------------------
+
+* on XenForo 2.2 releases from before the thread view's log-in button gained its `button--wrap`
+  class, guests still saw "Log in or register to reply" on every thread, and `archive:validate`
+  failed that template modification. It now applies on every 2.2 and 2.3 release
+* deleting a member left their archive record behind, so `archive:validate` counted deleted
+  members as archived accounts. A deleted member's record now goes with them, upgrading removes
+  the records earlier versions left, and `archive:validate` warns about any it still finds
+* the Admin CP pages have moved from `admin.php?archive/...` to `admin.php?archive-site/...`, so
+  that the address names the add-on. Update any bookmark; the menu entries are unchanged
+
 2.2.3 (2026-10-12)
 ------------------
 
